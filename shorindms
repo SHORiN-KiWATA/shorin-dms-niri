@@ -343,7 +343,7 @@ apply_user_configs() {
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
-    local doc_src="/usr/share/doc/shorin-niri/README-DMS.txt"
+    local doc_src="/usr/share/doc/shorin-dms-niri/README-DMS.txt"
     if [[ -f "$doc_src" ]]; then
         info "$(_t "Copying tutorial file..." "正在复制教程文件到家目录...")"
         # 复制出来的同时，赋予它中文名字
