@@ -43,6 +43,7 @@ UPDATE_IGNORE=(
     ".config/xdg-terminals.list"
     ".config/fcitx5"
     ".local/share/fcitx5"
+    ".config/niri/dms/outputs.kdl"
 )
 
 build_ignore_list() {
@@ -110,7 +111,7 @@ manage_protection() {
             echo "$rel_path" >> "$USER_IGNORE_FILE"
             ok "$(_t "Protected: ~/$rel_path" "已添加保护: ~/$rel_path")"
         fi
-    elif [[ "$action" == "remove" ]]; then
+        elif [[ "$action" == "remove" ]]; then
         sed -i "\|^$rel_path$|d" "$USER_IGNORE_FILE" 2>/dev/null
         ok "$(_t "Unprotected: ~/$rel_path" "已取消保护: ~/$rel_path")"
     fi
@@ -340,7 +341,7 @@ apply_user_configs() {
     shorin link >/dev/null 2>&1
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
-
+    
     local doc_src="/usr/share/doc/shorin-dms-niri/必看-Shorin-DMS-Niri使用方法.txt"
     if [[ -f "$doc_src" ]]; then
         info "$(_t "Copying tutorial file..." "正在复制教程文件到桌面...")"
@@ -396,9 +397,9 @@ remove_dotfiles() {
         sudo rmdir "/etc/firefox/policies" 2>/dev/null
         sudo rmdir "/etc/firefox" 2>/dev/null
     fi
-
-    rm -f "$HOME/必看-Shorin-DMS-Niri使用方法.txt" 2>/dev/null 
-
+    
+    rm -f "$HOME/必看-Shorin-DMS-Niri使用方法.txt" 2>/dev/null
+    
     cleanup_old_backups
     ok "$(_t "Cleanup complete! Removed $removed_count files." "清理完成！共精准移除了 $removed_count 个核心配置文件。")"
 }
