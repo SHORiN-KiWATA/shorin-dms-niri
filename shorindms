@@ -14,7 +14,6 @@ UPDATE_IGNORE=(
     ".config/mimeapps.list"
     ".config/fcitx5"
     ".local/share/fcitx5"
-    ".config/DankMeterialShell"
 )
 
 is_ignored() {
@@ -143,7 +142,6 @@ setup_system_environment() {
     echo "正在配置系统级设置 (将要求提权)..."
     echo "----------------------------------------"
     
-    # --- 1. Locale Configuration ---
     local NEED_GENERATE=false
     
     if locale -a | grep -iq "en_US.utf8"; then
@@ -173,7 +171,6 @@ setup_system_environment() {
         echo "[√] 所有必须的 Locales 均已配置完毕。"
     fi
     
-    # --- 2. 启用 power-profiles-daemon 服务 ---
     echo "[*] 正在启用 power-profiles-daemon 服务..."
     sudo systemctl enable --now power-profiles-daemon.service
     echo "[√] 系统级配置完成！"
@@ -190,19 +187,13 @@ apply_user_configs() {
         echo 'kitty.desktop' >> "$HOME/.config/xdg-terminals.list"
     fi
     
-    # ----------------------------------------------------
-    # 配置 GTK 占位文件与 GNOME 设置 (gsettings)
-    # ----------------------------------------------------
     echo "正在初始化 GTK 主题与深色模式..."
-    
-    # GTK 4.0
     mkdir -p "$HOME/.config/gtk-4.0"
     touch "$HOME/.config/gtk-4.0/dank-colors.css"
     if ! grep -q "dank-colors.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null; then
         echo '@import url("dank-colors.css");' >> "$HOME/.config/gtk-4.0/gtk.css"
     fi
     
-    # GTK 3.0
     mkdir -p "$HOME/.config/gtk-3.0"
     touch "$HOME/.config/gtk-3.0/dank-colors.css"
     if ! grep -q "dank-colors.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null; then
@@ -210,13 +201,10 @@ apply_user_configs() {
     fi
     
     if command -v gsettings &>/dev/null; then
-        # GNOME 环境 / GTK 程序的外观设置
         gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
         gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"
-        # Nautilus 终端设置
         gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty
     fi
-    # ----------------------------------------------------
     
     if [[ -f "$HOME/.config/gtk-3.0/bookmarks" ]]; then
         sed -i "s/shorin/$USER/g" "$HOME/.config/gtk-3.0/bookmarks"
@@ -256,9 +244,78 @@ apply_user_configs() {
     echo "环境初始化全部完成！"
 }
 
-# --- shorin contrib init ---
-shorin_contrib_init() {
-    shorin link
+# --- 清理/卸载逻辑 ---
+remove_dotfiles() {
+    echo "----------------------------------------"
+    echo "警告：这将移除家目录下所有由 Shorin DMS 管理的配置文件！"
+    echo "移除的文件将会被安全备份到 ~/.cache 目录。"
+    read -p "确定要继续清理吗？ [y/N] " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "操作已取消。"
+        return
+    fi
+    echo "----------------------------------------"
+    
+    if [[ ! -d "$TEMPLATE_DIR" ]]; then
+        echo "错误: 找不到模板目录 $TEMPLATE_DIR，无法进行精确比对清理。"
+        exit 1
+    fi
+    
+    mkdir -p "$BACKUP_DIR"
+    cd "$TEMPLATE_DIR" || exit 1
+    
+    local removed_count=0
+    
+    # 1. 递归比对模板文件并删除对应家目录文件
+    while IFS= read -r -d '' file; do
+        local rel_path="${file#./}"
+        local dest_file="$HOME/$rel_path"
+        
+        if [[ -e "$dest_file" || -L "$dest_file" ]]; then
+            local backup_file="$BACKUP_DIR/$rel_path"
+            mkdir -p "$(dirname "$backup_file")"
+            cp -a "$dest_file" "$backup_file"
+            rm -f "$dest_file"
+            echo "已备份并移除: ~/$rel_path"
+            ((removed_count++))
+        fi
+    done < <(find . -type f -print0)
+    
+    # 2. 尝试清理那些因为删除文件而变成空目录的文件夹 (逆序删除)
+    find . -type d -mindepth 1 | awk '{ print length, $0 }' | sort -rn | cut -d" " -f2- | while read -r d; do
+        local rel_dir="${d#./}"
+        local dest_dir="$HOME/$rel_dir"
+        if [[ -d "$dest_dir" ]]; then
+            # 只有当目录确实为空时 rmdir 才会成功
+            rmdir "$dest_dir" 2>/dev/null && echo "已清理空目录: ~/$rel_dir"
+        fi
+    done
+    
+    # 3. 撤销额外的占位文件和注入的配置
+    echo "正在移除额外的占位文件与注入配置..."
+    
+    # 清理 GTK CSS 注入
+    if [[ -f "$HOME/.config/gtk-4.0/gtk.css" ]]; then
+        sed -i '/@import url("dank-colors.css");/d' "$HOME/.config/gtk-4.0/gtk.css"
+    fi
+    if [[ -f "$HOME/.config/gtk-3.0/gtk.css" ]]; then
+        sed -i '/@import url("dank-colors.css");/d' "$HOME/.config/gtk-3.0/gtk.css"
+    fi
+    
+    # 清理创建的占位文件
+    rm -f "$HOME/.config/gtk-4.0/dank-colors.css"
+    rm -f "$HOME/.config/gtk-3.0/dank-colors.css"
+    rm -f "$HOME/.config/niri/dms/colors.kdl"
+    rmdir "$HOME/.config/niri/dms" 2>/dev/null
+    
+    shorin unlink
+    
+    cleanup_old_backups
+    
+    echo "----------------------------------------"
+    echo "清理完成！共移除了 $removed_count 个核心配置文件。"
+    echo "所有被移除的配置已安全备份至: $BACKUP_DIR"
+    echo "----------------------------------------"
 }
 
 # --- 命令路由 ---
@@ -271,13 +328,17 @@ case "$1" in
     update)
         sync_dotfiles "update"
     ;;
+    remove)
+        remove_dotfiles
+    ;;
     hide-icons)
         run_hide_desktop_file
     ;;
     *)
-        echo "用法: shorindms {init|update|hide-icons}"
+        echo "用法: shorindms {init|update|remove|hide-icons}"
         echo "  init       - 首次安装时运行 (同步配置、提权配置系统服务、用户环境初始化)"
         echo "  update     - 日常更新使用 (同步最新配置，但保护忽略名单中的文件)"
+        echo "  remove     - 卸载/清理 (精准移除管理的配置文件并备份，恢复纯净环境)"
         echo "  hide-icons - 仅执行隐藏不需要的桌面图标的操作"
         exit 1
     ;;
