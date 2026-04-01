@@ -372,7 +372,7 @@ remove_dotfiles() {
         fi
     done < <(find . -type f -print0)
     
-    find . -type d -mindepth 1 | awk '{ print length, $0 }' | sort -rn | cut -d" " -f2- | while read -r d; do
+    find . -mindepth 1 -type d  | awk '{ print length, $0 }' | sort -rn | cut -d" " -f2- | while read -r d; do
         local dest_dir="$HOME/${d#./}"
         if [[ -d "$dest_dir" ]]; then rmdir "$dest_dir" 2>/dev/null; fi
     done
