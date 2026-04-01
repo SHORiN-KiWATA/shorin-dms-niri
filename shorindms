@@ -12,8 +12,9 @@ UPDATE_IGNORE=(
     ".config/gtk-3.0"
     ".config/gtk-4.0"
     ".config/mimeapps.list"
-    ".config/fcitx5" 
+    ".config/fcitx5"
     ".local/share/fcitx5"
+    ".config/DankMeterialShell"
 )
 
 is_ignored() {
@@ -70,20 +71,18 @@ sync_dotfiles() {
         echo "正在执行全量初始化安装..."
     fi
     echo "----------------------------------------"
-
+    
     if [[ ! -d "$TEMPLATE_DIR" ]]; then
         echo "错误: 找不到模板目录 $TEMPLATE_DIR"
         exit 1
     fi
-
+    
     mkdir -p "$BACKUP_DIR"
     cd "$TEMPLATE_DIR" || exit 1
     
-    # 使用 find 递归查找所有文件
     find . -type f -print0 | while IFS= read -r -d '' file; do
         local rel_path="${file#./}"
         
-        # 命中黑名单则跳过
         if [[ "$mode" == "update" ]] && is_ignored "$rel_path"; then
             continue
         fi
@@ -138,18 +137,86 @@ run_hide_desktop_file() {
     echo "图标隐藏完成！"
 }
 
+# --- 系统级环境配置 (需要 sudo) ---
+setup_system_environment() {
+    echo "----------------------------------------"
+    echo "正在配置系统级设置 (将要求提权)..."
+    echo "----------------------------------------"
+    
+    # --- 1. Locale Configuration ---
+    local NEED_GENERATE=false
+    
+    if locale -a | grep -iq "en_US.utf8"; then
+        echo "[√] English locale (en_US.UTF-8) 已启用。"
+    else
+        echo "[*] 正在启用 en_US.UTF-8..."
+        sudo sed -i 's/^#\s*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+        NEED_GENERATE=true
+    fi
+    
+    if locale -a | grep -iq "zh_CN.utf8"; then
+        echo "[√] Chinese locale (zh_CN.UTF-8) 已启用。"
+    else
+        echo "[*] 正在启用 zh_CN.UTF-8..."
+        sudo sed -i 's/^#\s*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen
+        NEED_GENERATE=true
+    fi
+    
+    if [ "$NEED_GENERATE" = true ]; then
+        echo "[*] 正在生成 Locales (可能需要几秒钟)..."
+        if sudo locale-gen; then
+            echo "[√] Locales 生成成功。"
+        else
+            echo "[x] Locales 生成失败。"
+        fi
+    else
+        echo "[√] 所有必须的 Locales 均已配置完毕。"
+    fi
+    
+    # --- 2. 启用 power-profiles-daemon 服务 ---
+    echo "[*] 正在启用 power-profiles-daemon 服务..."
+    sudo systemctl enable --now power-profiles-daemon.service
+    echo "[√] 系统级配置完成！"
+}
+
 # --- 用户环境配置 ---
 apply_user_configs() {
+    echo "----------------------------------------"
     echo "正在应用首次初始化的用户环境设置..."
+    echo "----------------------------------------"
     
     mkdir -p "$HOME/.config"
     if ! grep -q "kitty.desktop" "$HOME/.config/xdg-terminals.list" 2>/dev/null; then
         echo 'kitty.desktop' >> "$HOME/.config/xdg-terminals.list"
     fi
     
+    # ----------------------------------------------------
+    # 配置 GTK 占位文件与 GNOME 设置 (gsettings)
+    # ----------------------------------------------------
+    echo "正在初始化 GTK 主题与深色模式..."
+    
+    # GTK 4.0
+    mkdir -p "$HOME/.config/gtk-4.0"
+    touch "$HOME/.config/gtk-4.0/dank-colors.css"
+    if ! grep -q "dank-colors.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null; then
+        echo '@import url("dank-colors.css");' >> "$HOME/.config/gtk-4.0/gtk.css"
+    fi
+    
+    # GTK 3.0
+    mkdir -p "$HOME/.config/gtk-3.0"
+    touch "$HOME/.config/gtk-3.0/dank-colors.css"
+    if ! grep -q "dank-colors.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null; then
+        echo '@import url("dank-colors.css");' >> "$HOME/.config/gtk-3.0/gtk.css"
+    fi
+    
     if command -v gsettings &>/dev/null; then
+        # GNOME 环境 / GTK 程序的外观设置
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
+        gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"
+        # Nautilus 终端设置
         gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty
     fi
+    # ----------------------------------------------------
     
     if [[ -f "$HOME/.config/gtk-3.0/bookmarks" ]]; then
         sed -i "s/shorin/$USER/g" "$HOME/.config/gtk-3.0/bookmarks"
@@ -178,13 +245,15 @@ apply_user_configs() {
     fi
     
     run_hide_desktop_file
-
-    echo "初始化shorin-contrib工具"
+    
+    echo "初始化 shorin-contrib 工具"
     shorin link
-    echo "新建占位文件"
+    
+    echo "新建占位文件 (niri dms colors)"
+    mkdir -p "$HOME/.config/niri/dms"
     touch "$HOME/.config/niri/dms/colors.kdl"
-
-    echo "初始化环境配置完成！"
+    
+    echo "环境初始化全部完成！"
 }
 
 # --- shorin contrib init ---
@@ -196,6 +265,7 @@ shorin_contrib_init() {
 case "$1" in
     init)
         sync_dotfiles "init"
+        setup_system_environment
         apply_user_configs
     ;;
     update)
@@ -206,7 +276,7 @@ case "$1" in
     ;;
     *)
         echo "用法: shorindms {init|update|hide-icons}"
-        echo "  init       - 首次安装时运行 (全量覆盖并执行环境初始化)"
+        echo "  init       - 首次安装时运行 (同步配置、提权配置系统服务、用户环境初始化)"
         echo "  update     - 日常更新使用 (同步最新配置，但保护忽略名单中的文件)"
         echo "  hide-icons - 仅执行隐藏不需要的桌面图标的操作"
         exit 1
