@@ -1,6 +1,6 @@
 # shorin-dms-niri
 
-开箱即用的Shorin DMS Niri桌面环境。
+基于Niri+DMS的桌面预设，开箱即用。
 
 
 ##  Usage 使用方法
