@@ -1,13 +1,39 @@
 #!/usr/bin/env bash
 
-TEMPLATE_DIR="/usr/share/shorin-dms-niri"
+# ==========================================
+# 1. 国际化与 UI 美化设置 (i18n & UI)
+# ==========================================
+C_DEF='\033[0m'
+C_BLU='\033[1;34m'
+C_GRN='\033[1;32m'
+C_YEL='\033[1;33m'
+C_RED='\033[1;31m'
+C_CYA='\033[1;36m'
 
+IS_ZH=0
+if [[ "${LANG}" == *"zh_CN"* || "${LC_ALL}" == *"zh_CN"* ]]; then
+    IS_ZH=1
+fi
+
+# 翻译函数：_t "English" "中文"
+_t() {
+    if [[ $IS_ZH -eq 1 && -n "$2" ]]; then echo "$2"; else echo "$1"; fi
+}
+
+info() { echo -e "${C_BLU}[*]${C_DEF} $1"; }
+ok()   { echo -e "${C_GRN}[✔]${C_DEF} $1"; }
+warn() { echo -e "${C_YEL}[!]${C_DEF} $1"; }
+err()  { echo -e "${C_RED}[✘]${C_DEF} $1"; }
+step() { echo -e "\n${C_CYA}>>> $1${C_DEF}"; }
+
+# ==========================================
+# 2. 全局变量与配置
+# ==========================================
+TEMPLATE_DIR="/usr/share/shorin-dms-niri"
 BASE_BACKUP_DIR="$HOME/.cache/shorin-dms-niri-backup"
 BACKUP_DIR="$BASE_BACKUP_DIR/$(date +%Y%m%d_%H%M%S)"
 
-# ==========================================
-# 更新时需要忽略的文件/目录名单 (仅 update 时生效)
-# ==========================================
+# 更新时需要忽略的文件名单 (黑名单)
 UPDATE_IGNORE=(
     ".config/gtk-3.0"
     ".config/gtk-4.0"
@@ -26,7 +52,10 @@ is_ignored() {
     return 1
 }
 
-# --- 文件级同步与单文件备份 ---
+# ==========================================
+# 3. 核心功能函数
+# ==========================================
+
 backup_and_copy() {
     local base_dir="$1"
     local rel_path="$2"
@@ -34,70 +63,75 @@ backup_and_copy() {
     local dest_file="$HOME/$rel_path"
     local dest_dir="$(dirname "$dest_file")"
     
-    mkdir -p "$dest_dir"
+    mkdir -p "$dest_dir" 2>/dev/null
     
     if [[ -e "$dest_file" || -L "$dest_file" ]]; then
         local backup_file="$BACKUP_DIR/$rel_path"
-        mkdir -p "$(dirname "$backup_file")"
-        cp -a "$dest_file" "$backup_file"
+        mkdir -p "$(dirname "$backup_file")" 2>/dev/null
+        cp -a "$dest_file" "$backup_file" 2>/dev/null
         rm -f "$dest_file"
     fi
     
     cp -a "$src_file" "$dest_file"
-    echo "已同步: ~/$rel_path"
 }
 
 cleanup_old_backups() {
     if [[ -d "$BASE_BACKUP_DIR" ]]; then
         local backups=( $(ls -dt "$BASE_BACKUP_DIR"/* 2>/dev/null) )
         local count=${#backups[@]}
+        local removed_backups=0
         if (( count > 2 )); then
             for (( i=2; i<count; i++ )); do
                 rm -rf "${backups[i]}"
-                echo "已清理旧备份: ${backups[i]}"
+                ((removed_backups++))
             done
+            info "$(_t "Cleaned up $removed_backups old backup(s)." "已清理 $removed_backups 个过期备份。")"
         fi
     fi
 }
 
 sync_dotfiles() {
     local mode="$1"
+    local sync_count=0
+    local skip_count=0
     
-    echo "----------------------------------------"
     if [[ "$mode" == "update" ]]; then
-        echo "正在执行更新 (黑名单内的文件将被保护不被覆盖)..."
+        step "$(_t "Updating Configuration Files" "正在更新配置文件")"
+        info "$(_t "Blacklisted files will be protected from overwriting." "黑名单内的文件将被保护，不会被覆盖。")"
     else
-        echo "正在执行全量初始化安装..."
+        step "$(_t "Full Initialization Installation" "全量初始化安装")"
     fi
-    echo "----------------------------------------"
     
     if [[ ! -d "$TEMPLATE_DIR" ]]; then
-        echo "错误: 找不到模板目录 $TEMPLATE_DIR"
+        err "$(_t "Template directory not found: $TEMPLATE_DIR" "错误: 找不到模板目录 $TEMPLATE_DIR")"
         exit 1
     fi
     
     mkdir -p "$BACKUP_DIR"
     cd "$TEMPLATE_DIR" || exit 1
     
-    find . -type f -print0 | while IFS= read -r -d '' file; do
+    # 进度提示
+    info "$(_t "Synchronizing files..." "正在同步文件...")"
+    
+    # 使用 process substitution 保证计数器正常工作
+    while IFS= read -r -d '' file; do
         local rel_path="${file#./}"
         
         if [[ "$mode" == "update" ]] && is_ignored "$rel_path"; then
+            ((skip_count++))
             continue
         fi
         
         backup_and_copy "$TEMPLATE_DIR" "$rel_path"
-    done
+        ((sync_count++))
+    done < <(find . -type f -print0)
     
     cleanup_old_backups
     
-    echo "----------------------------------------"
-    echo "配置文件同步完成！"
-    echo "被覆盖的旧配置已统一备份至: $BACKUP_DIR"
-    echo "----------------------------------------"
+    ok "$(_t "Synced $sync_count files successfully. (Skipped $skip_count files)" "成功同步 $sync_count 个文件。(跳过了 $skip_count 个受保护文件)")"
+    info "$(_t "Overwritten files are backed up to: $BACKUP_DIR" "被覆盖的旧配置已统一备份至: $BACKUP_DIR")"
 }
 
-# --- 隐藏桌面图标逻辑 ---
 hide_desktop_file() {
     local source_file="$1"
     local filename=$(basename "$source_file")
@@ -105,9 +139,9 @@ hide_desktop_file() {
     local target_file="$user_dir/$filename"
     
     if [[ -f "$source_file" ]]; then
-        mkdir -p "$user_dir"
-        cp -f "$source_file" "$target_file"
-        if grep -q "^NoDisplay=" "$target_file"; then
+        mkdir -p "$user_dir" 2>/dev/null
+        cp -f "$source_file" "$target_file" 2>/dev/null
+        if grep -q "^NoDisplay=" "$target_file" 2>/dev/null; then
             sed -i 's/^NoDisplay=.*/NoDisplay=true/' "$target_file"
         else
             echo "NoDisplay=true" >> "$target_file"
@@ -129,135 +163,147 @@ run_hide_desktop_file() {
         "org.freedesktop.MalcontentControl.desktop" "org.gnome.Nautilus.desktop"
     )
     
-    echo "正在隐藏不需要的桌面图标..."
+    info "$(_t "Hiding unnecessary desktop icons..." "正在隐藏不需要的桌面图标...")"
     for app in "${apps_to_hide[@]}"; do
         hide_desktop_file "/usr/share/applications/$app"
     done
-    echo "图标隐藏完成！"
+    ok "$(_t "Icons hidden successfully." "桌面图标隐藏完成。")"
 }
 
-# --- 系统级环境配置 (需要 sudo) ---
 setup_system_environment() {
-    echo "----------------------------------------"
-    echo "正在配置系统级设置 (将要求提权)..."
-    echo "----------------------------------------"
+    step "$(_t "Configuring System Environment (Requires Sudo)" "正在配置系统级设置 (将要求提权)")"
     
+    # 1. Locale Configuration
     local NEED_GENERATE=false
-    
     if locale -a | grep -iq "en_US.utf8"; then
-        echo "[√] English locale (en_US.UTF-8) 已启用。"
+        ok "$(_t "English locale (en_US.UTF-8) is enabled." "English locale (en_US.UTF-8) 已启用。")"
     else
-        echo "[*] 正在启用 en_US.UTF-8..."
+        info "$(_t "Enabling en_US.UTF-8..." "正在启用 en_US.UTF-8...")"
         sudo sed -i 's/^#\s*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
         NEED_GENERATE=true
     fi
     
     if locale -a | grep -iq "zh_CN.utf8"; then
-        echo "[√] Chinese locale (zh_CN.UTF-8) 已启用。"
+        ok "$(_t "Chinese locale (zh_CN.UTF-8) is enabled." "Chinese locale (zh_CN.UTF-8) 已启用。")"
     else
-        echo "[*] 正在启用 zh_CN.UTF-8..."
+        info "$(_t "Enabling zh_CN.UTF-8..." "正在启用 zh_CN.UTF-8...")"
         sudo sed -i 's/^#\s*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen
         NEED_GENERATE=true
     fi
     
     if [ "$NEED_GENERATE" = true ]; then
-        echo "[*] 正在生成 Locales (可能需要几秒钟)..."
-        if sudo locale-gen; then
-            echo "[√] Locales 生成成功。"
-        else
-            echo "[x] Locales 生成失败。"
-        fi
-    else
-        echo "[√] 所有必须的 Locales 均已配置完毕。"
+        info "$(_t "Generating locales (this may take a few seconds)..." "正在生成 Locales (可能需要几秒钟)...")"
+        sudo locale-gen >/dev/null 2>&1
+        ok "$(_t "Locales generated successfully." "Locales 生成完成。")"
     fi
     
-    echo "[*] 正在启用 power-profiles-daemon 服务..."
-    sudo systemctl enable --now power-profiles-daemon.service
-    echo "[√] 系统级配置完成！"
+    # 2. Power Profiles Daemon
+    info "$(_t "Enabling power-profiles-daemon service..." "正在启用 power-profiles-daemon 服务...")"
+    sudo systemctl enable --now power-profiles-daemon.service >/dev/null 2>&1
+    ok "$(_t "Power management service enabled." "电源管理服务已启用。")"
+    
+    # 3. Firefox Policies
+    info "$(_t "Configuring Firefox global policies (Pywalfox & uBlock)..." "正在配置 Firefox 全局策略 (Pywalfox & uBlock)...")"
+    local POL_DIR="/etc/firefox/policies"
+    sudo mkdir -p "$POL_DIR" 2>/dev/null
+    sudo tee "$POL_DIR/policies.json" > /dev/null << 'EOF'
+{
+  "policies": {
+    "Extensions": {
+      "Install": [
+        "https://addons.mozilla.org/firefox/downloads/latest/pywalfox/latest.xpi",
+        "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      ]
+    }
+  }
+}
+EOF
+    sudo chmod 755 "$POL_DIR"
+    sudo chmod 644 "$POL_DIR/policies.json"
+    ok "$(_t "Firefox policies configured." "Firefox 策略配置完成。")"
 }
 
-# --- 用户环境配置 ---
 apply_user_configs() {
-    echo "----------------------------------------"
-    echo "正在应用首次初始化的用户环境设置..."
-    echo "----------------------------------------"
+    step "$(_t "Applying User Environment Settings" "正在应用用户环境设置")"
     
-    mkdir -p "$HOME/.config"
+    mkdir -p "$HOME/.config" 2>/dev/null
     if ! grep -q "kitty.desktop" "$HOME/.config/xdg-terminals.list" 2>/dev/null; then
         echo 'kitty.desktop' >> "$HOME/.config/xdg-terminals.list"
     fi
     
-    echo "正在初始化 GTK 主题与深色模式..."
-    mkdir -p "$HOME/.config/gtk-4.0"
+    info "$(_t "Initializing GTK themes and dark mode..." "正在初始化 GTK 主题与深色模式...")"
+    mkdir -p "$HOME/.config/gtk-4.0" 2>/dev/null
     touch "$HOME/.config/gtk-4.0/dank-colors.css"
     if ! grep -q "dank-colors.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null; then
         echo '@import url("dank-colors.css");' >> "$HOME/.config/gtk-4.0/gtk.css"
     fi
     
-    mkdir -p "$HOME/.config/gtk-3.0"
+    mkdir -p "$HOME/.config/gtk-3.0" 2>/dev/null
     touch "$HOME/.config/gtk-3.0/dank-colors.css"
     if ! grep -q "dank-colors.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null; then
         echo '@import url("dank-colors.css");' >> "$HOME/.config/gtk-3.0/gtk.css"
     fi
     
-    if command -v gsettings &>/dev/null; then
-        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
-        gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"
-        gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty
+    if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" >/dev/null 2>&1
+        gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" >/dev/null 2>&1
+        gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty >/dev/null 2>&1
     fi
     
     if [[ -f "$HOME/.config/gtk-3.0/bookmarks" ]]; then
         sed -i "s/shorin/$USER/g" "$HOME/.config/gtk-3.0/bookmarks"
     fi
     
-    mkdir -p "$HOME/Templates"
+    info "$(_t "Creating user templates..." "正在创建用户模板...")"
+    mkdir -p "$HOME/Templates" 2>/dev/null
     touch "$HOME/Templates/new"
     echo '#!/usr/bin/env bash' > "$HOME/Templates/new.sh"
     chmod +x "$HOME/Templates/new.sh"
     
-    if command -v flatpak &>/dev/null; then
-        flatpak override --user --filesystem=xdg-data/themes
-        flatpak override --user --filesystem="$HOME/.themes"
-        flatpak override --user --filesystem=xdg-config/gtk-4.0
-        flatpak override --user --filesystem=xdg-config/gtk-3.0
-        flatpak override --user --env=GTK_THEME=adw-gtk3-dark
-        flatpak override --user --filesystem=xdg-config/fontconfig
+    if command -v flatpak >/dev/null 2>&1; then
+        flatpak override --user --filesystem=xdg-data/themes >/dev/null 2>&1
+        flatpak override --user --filesystem="$HOME/.themes" >/dev/null 2>&1
+        flatpak override --user --filesystem=xdg-config/gtk-4.0 >/dev/null 2>&1
+        flatpak override --user --filesystem=xdg-config/gtk-3.0 >/dev/null 2>&1
+        flatpak override --user --env=GTK_THEME=adw-gtk3-dark >/dev/null 2>&1
+        flatpak override --user --filesystem=xdg-config/fontconfig >/dev/null 2>&1
     fi
     
-    mkdir -p "$HOME/.local/share"
-    ln -sfn /usr/share/themes "$HOME/.local/share/themes"
+    mkdir -p "$HOME/.local/share" 2>/dev/null
+    ln -sfn /usr/share/themes "$HOME/.local/share/themes" 2>/dev/null
     
-    mkdir -p "$HOME/.local/bin"
-    if command -v kitty &>/dev/null; then
-        ln -sfn /usr/bin/kitty "$HOME/.local/bin/xterm"
+    mkdir -p "$HOME/.local/bin" 2>/dev/null
+    if command -v kitty >/dev/null 2>&1; then
+        ln -sfn /usr/bin/kitty "$HOME/.local/bin/xterm" 2>/dev/null
     fi
     
     run_hide_desktop_file
     
-    echo "初始化 shorin-contrib 工具"
-    shorin link
+    info "$(_t "Initializing shorin-contrib tools..." "初始化 shorin-contrib 工具...")"
+    shorin link >/dev/null 2>&1
     
-    echo "新建占位文件 (niri dms colors)"
-    mkdir -p "$HOME/.config/niri/dms"
+    mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
-    echo "环境初始化全部完成！"
+    ok "$(_t "Environment initialization complete!" "环境初始化全部完成！")"
 }
 
-# --- 清理/卸载逻辑 ---
 remove_dotfiles() {
-    echo "----------------------------------------"
-    echo "警告：这将移除家目录下所有由 Shorin DMS 管理的配置文件！"
-    echo "移除的文件将会被安全备份到 ~/.cache 目录。"
-    read -p "确定要继续清理吗？ [y/N] " confirm
+    step "$(_t "Uninstall & Cleanup" "卸载与清理")"
+    
+    warn "$(_t "WARNING: This will remove all Shorin DMS managed configs from your home directory!" "警告：这将移除家目录下所有由 Shorin DMS 管理的配置文件！")"
+    warn "$(_t "Removed files will be safely backed up to ~/.cache." "被移除的家目录文件将会被安全备份到 ~/.cache 目录。")"
+    warn "$(_t "Note: Cleaning system-level configs (e.g., Firefox policies) requires sudo." "注意：清理系统级配置 (如 Firefox 策略) 可能需要输入密码提权。")"
+    
+    local confirm
+    read -p "$(_t "Are you sure you want to continue? [y/N] " "确定要继续清理吗？ [y/N] ")" confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        echo "操作已取消。"
+        info "$(_t "Operation cancelled." "操作已取消。")"
         return
     fi
-    echo "----------------------------------------"
     
     if [[ ! -d "$TEMPLATE_DIR" ]]; then
-        echo "错误: 找不到模板目录 $TEMPLATE_DIR，无法进行精确比对清理。"
+        err "$(_t "Template directory not found: $TEMPLATE_DIR" "错误: 找不到模板目录 $TEMPLATE_DIR，无法进行精确比对清理。")"
         exit 1
     fi
     
@@ -265,60 +311,60 @@ remove_dotfiles() {
     cd "$TEMPLATE_DIR" || exit 1
     
     local removed_count=0
+    info "$(_t "Removing configuration files..." "正在比对并移除配置文件...")"
     
-    # 1. 递归比对模板文件并删除对应家目录文件
     while IFS= read -r -d '' file; do
         local rel_path="${file#./}"
         local dest_file="$HOME/$rel_path"
         
         if [[ -e "$dest_file" || -L "$dest_file" ]]; then
             local backup_file="$BACKUP_DIR/$rel_path"
-            mkdir -p "$(dirname "$backup_file")"
-            cp -a "$dest_file" "$backup_file"
+            mkdir -p "$(dirname "$backup_file")" 2>/dev/null
+            cp -a "$dest_file" "$backup_file" 2>/dev/null
             rm -f "$dest_file"
-            echo "已备份并移除: ~/$rel_path"
             ((removed_count++))
         fi
     done < <(find . -type f -print0)
     
-    # 2. 尝试清理那些因为删除文件而变成空目录的文件夹 (逆序删除)
+    # 尝试清理空目录 (不输出报错)
     find . -type d -mindepth 1 | awk '{ print length, $0 }' | sort -rn | cut -d" " -f2- | while read -r d; do
-        local rel_dir="${d#./}"
-        local dest_dir="$HOME/$rel_dir"
+        local dest_dir="$HOME/${d#./}"
         if [[ -d "$dest_dir" ]]; then
-            # 只有当目录确实为空时 rmdir 才会成功
-            rmdir "$dest_dir" 2>/dev/null && echo "已清理空目录: ~/$rel_dir"
+            rmdir "$dest_dir" 2>/dev/null
         fi
     done
     
-    # 3. 撤销额外的占位文件和注入的配置
-    echo "正在移除额外的占位文件与注入配置..."
+    info "$(_t "Removing placeholders, GTK injections and system policies..." "正在移除占位文件、GTK 注入配置与系统级策略...")"
     
-    # 清理 GTK CSS 注入
+    # 清理 GTK CSS
     if [[ -f "$HOME/.config/gtk-4.0/gtk.css" ]]; then
-        sed -i '/@import url("dank-colors.css");/d' "$HOME/.config/gtk-4.0/gtk.css"
+        sed -i '/@import url("dank-colors.css");/d' "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null
     fi
     if [[ -f "$HOME/.config/gtk-3.0/gtk.css" ]]; then
-        sed -i '/@import url("dank-colors.css");/d' "$HOME/.config/gtk-3.0/gtk.css"
+        sed -i '/@import url("dank-colors.css");/d' "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null
     fi
-    
-    # 清理创建的占位文件
-    rm -f "$HOME/.config/gtk-4.0/dank-colors.css"
-    rm -f "$HOME/.config/gtk-3.0/dank-colors.css"
-    rm -f "$HOME/.config/niri/dms/colors.kdl"
+    rm -f "$HOME/.config/gtk-4.0/dank-colors.css" 2>/dev/null
+    rm -f "$HOME/.config/gtk-3.0/dank-colors.css" 2>/dev/null
+    rm -f "$HOME/.config/niri/dms/colors.kdl" 2>/dev/null
     rmdir "$HOME/.config/niri/dms" 2>/dev/null
     
-    shorin unlink
+    # 清理 Firefox
+    if [[ -f "/etc/firefox/policies/policies.json" ]]; then
+        info "$(_t "Removing Firefox global policies (Requires Sudo)..." "正在移除 Firefox 全局策略 (需要 sudo)...")"
+        sudo rm -f "/etc/firefox/policies/policies.json"
+        sudo rmdir "/etc/firefox/policies" 2>/dev/null
+        sudo rmdir "/etc/firefox" 2>/dev/null
+    fi
     
     cleanup_old_backups
     
-    echo "----------------------------------------"
-    echo "清理完成！共移除了 $removed_count 个核心配置文件。"
-    echo "所有被移除的配置已安全备份至: $BACKUP_DIR"
-    echo "----------------------------------------"
+    ok "$(_t "Cleanup complete! Removed $removed_count files." "清理完成！共精准移除了 $removed_count 个核心配置文件。")"
+    info "$(_t "Backed up to: $BACKUP_DIR" "所有被移除的配置已安全备份至: $BACKUP_DIR")"
 }
 
-# --- 命令路由 ---
+# ==========================================
+# 4. 路由入口
+# ==========================================
 case "$1" in
     init)
         sync_dotfiles "init"
@@ -335,11 +381,11 @@ case "$1" in
         run_hide_desktop_file
     ;;
     *)
-        echo "用法: shorindms {init|update|remove|hide-icons}"
-        echo "  init       - 首次安装时运行 (同步配置、提权配置系统服务、用户环境初始化)"
-        echo "  update     - 日常更新使用 (同步最新配置，但保护忽略名单中的文件)"
-        echo "  remove     - 卸载/清理 (精准移除管理的配置文件并备份，恢复纯净环境)"
-        echo "  hide-icons - 仅执行隐藏不需要的桌面图标的操作"
+        echo -e "${C_BLU}Usage:${C_DEF} shorindms {init|update|remove|hide-icons}"
+        echo -e "  ${C_GRN}init${C_DEF}       - $(_t "First-time setup (Sync configs, configure system services & user env)" "首次安装时运行 (同步配置、提权配置系统服务、用户环境初始化)")"
+        echo -e "  ${C_YEL}update${C_DEF}     - $(_t "Routine update (Sync latest configs, but protect ignored files)" "日常更新使用 (同步最新配置，但保护黑名单中的文件)")"
+        echo -e "  ${C_RED}remove${C_DEF}     - $(_t "Uninstall/Cleanup (Remove managed configs and create a backup)" "卸载/清理 (精准移除管理的配置文件并备份，恢复纯净环境)")"
+        echo -e "  ${C_CYA}hide-icons${C_DEF} - $(_t "Hide unnecessary desktop icons" "仅执行隐藏不需要的桌面图标的操作")"
         exit 1
     ;;
 esac
