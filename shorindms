@@ -44,6 +44,7 @@ UPDATE_IGNORE=(
     ".config/fcitx5"
     ".local/share/fcitx5"
     ".config/niri/dms/outputs.kdl"
+    ".config/niri"
 )
 
 build_ignore_list() {
