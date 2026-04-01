@@ -343,11 +343,11 @@ apply_user_configs() {
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
-    local doc_src="/usr/share/doc/shorin-dms-niri/必看-Shorin-DMS-Niri使用方法.txt"
+    local doc_src="/usr/share/doc/shorin-niri/README-DMS.txt"
     if [[ -f "$doc_src" ]]; then
-        info "$(_t "Copying tutorial file..." "正在复制教程文件到桌面...")"
-        # 复制且不覆盖用户的修改
-        cp -n "$doc_src" "$HOME/" 2>/dev/null || true
+        info "$(_t "Copying tutorial file..." "正在复制教程文件到家目录...")"
+        # 复制出来的同时，赋予它中文名字
+        cp -n "$doc_src" "$HOME/必看-shoirn-DMS-Niri使用方法.txt" 2>/dev/null || true
     fi
     
     ok "$(_t "Environment initialization complete!" "环境初始化全部完成！")"
