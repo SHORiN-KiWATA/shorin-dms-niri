@@ -4,6 +4,8 @@
 //       ██ ██   ██ ██    ██ ██   ██ ██ ██  ██ ██ 
 //  ██████  ██   ██  ██████  ██   ██ ██ ██   ████ 
 
+// 自25.11版本起，niri的配置文件支持了拆分，每一条include都代表把已经拆分出去的配置文件嵌入进来。
+
 include "layout.kdl"
 include "animations.kdl"
 // 截图保存位置
@@ -77,10 +79,8 @@ input {
     }
 }
 // 自动启动
-// 启动dms，同时禁用它自带的polkit
 spawn-at-startup "dms" "run"
-// 询问管理员权限功能（身份验证）
-spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+// 录屏修复
 spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=niri & /usr/lib/xdg-desktop-portal-gnome"
 // GNOME tracker修复
 spawn-sh-at-startup "systemctl --user set-environment XDG_SESSION_CLASS=user"
