@@ -5,7 +5,7 @@ set fish_greeting ""
 set -p PATH ~/.local/bin
 starship init fish | source
 zoxide init fish --cmd cd | source
-
+# 111
 function y
 	set tmp (mktemp -t "yazi-cwd.XXXXXX")
 	yazi $argv --cwd-file="$tmp"
