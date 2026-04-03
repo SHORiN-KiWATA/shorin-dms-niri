@@ -95,16 +95,21 @@ manage_protection() {
     
     local abs_path
     abs_path="$(realpath -m "$target")"
-    local rel_path="${abs_path#$HOME/}"
     
-    if [[ "$abs_path" == "$rel_path" ]]; then
+    # [修复1]：更严谨地清理 HOME 变量末尾可能存在的斜杠，确保路径截取 100% 准确
+    local clean_home="${HOME%/}"
+    
+    # [修复2]：更改判断逻辑，确保传入的是 HOME 目录下的子路径
+    if [[ "$abs_path" != "$clean_home/"* ]]; then
         err "$(_t "Path must be inside your home directory." "目标路径必须在您的家目录内。")"
         return
     fi
     
+    local rel_path="${abs_path#$clean_home/}"
+    
     if [[ "$action" == "add" ]]; then
-        # 静默跳过验证
-        if [[ ! -e "$TEMPLATE_DIR/$rel_path" ]]; then return; fi
+        # [修复3]：移除了原有的 `if [[ ! -e "$TEMPLATE_DIR/$rel_path" ]]; then return; fi`
+        # 允许用户自由保护还不在模板内（但希望未来不被覆盖）或完全自定义的独立目录。
         
         if grep -Fxq "$rel_path" "$USER_IGNORE_FILE"; then
             info "$(_t "Path is already protected." "该路径已在保护列表中。")"
@@ -112,7 +117,7 @@ manage_protection() {
             echo "$rel_path" >> "$USER_IGNORE_FILE"
             ok "$(_t "Protected: ~/$rel_path" "已添加保护: ~/$rel_path")"
         fi
-        elif [[ "$action" == "remove" ]]; then
+    elif [[ "$action" == "remove" ]]; then
         sed -i "\|^$rel_path$|d" "$USER_IGNORE_FILE" 2>/dev/null
         ok "$(_t "Unprotected: ~/$rel_path" "已取消保护: ~/$rel_path")"
     fi
