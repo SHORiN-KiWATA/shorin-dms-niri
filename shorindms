@@ -284,6 +284,8 @@ EOF
 
 apply_user_configs() {
     step "$(_t "Applying User Environment Settings" "正在应用用户环境设置")"
+
+    LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 xdg-user-dirs-update --force || true
     
     mkdir -p "$HOME/.config" 2>/dev/null
     if ! grep -q "kitty.desktop" "$HOME/.config/xdg-terminals.list" 2>/dev/null; then
