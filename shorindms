@@ -311,9 +311,35 @@ apply_user_configs() {
     fi
     
     if command -v gsettings >/dev/null 2>&1; then
-       dbus-launch gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" >/dev/null 2>&1
-      dbus-launch  gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" >/dev/null 2>&1
-      dbus-launch  gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty >/dev/null 2>&1
+        info "$(_t "Applying GNOME/GTK settings..." "正在应用 GNOME/GTK 配置...")"
+        
+        # 将命令打包，统一使用 2>/dev/null || true 防止第三方架构不存在时报错中断
+        GSETTINGS_CMDS='
+            gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+            gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty 2>/dev/null || true
+        '
+        
+        # 1. 检查当前是否已有 DBUS 会话 (在图形界面的终端里执行)
+        if [ -n "$DBUS_SESSION_BUS_ADDRESS" ]; then
+            eval "$GSETTINGS_CMDS"
+            
+        else
+            # 2. 如果在 TTY 中运行，尝试从 systemd 用户会话获取真实的 DBUS 地址
+            USER_DBUS=$(systemctl --user show-environment 2>/dev/null | grep -E '^DBUS_SESSION_BUS_ADDRESS=')
+            if [ -n "$USER_DBUS" ]; then
+                export "$USER_DBUS"
+                eval "$GSETTINGS_CMDS"
+                
+            # 3. 彻底没有 DBUS (纯 TTY 初始装机环境)，使用 dbus-run-session 临时处理
+            elif command -v dbus-run-session >/dev/null 2>&1; then
+                dbus-run-session bash -c "$GSETTINGS_CMDS"
+                
+            # 4. 最后的后备方案
+            else
+                eval "$GSETTINGS_CMDS"
+            fi
+        fi
     fi
     
     if [[ -f "$HOME/.config/gtk-3.0/bookmarks" ]]; then
