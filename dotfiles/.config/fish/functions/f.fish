@@ -1,34 +1,51 @@
 function f
     # ==============================================================================
-    # 【脚本功能说明】
-    # 1. 结合 Fastfetch，在终端启动时展示随机二次元图片 (支持 SFW / NSFW 模式)。
+    # 脚本功能说明
+    # 1. 结合 Fastfetch，在终端启动时展示随机二次元图片，支持 SFW 与 NSFW 模式。
     # 2. 具备静默后台异步下载机制，库存不足时自动补货，绝不阻塞前台终端的启动。
-    # 3. 具备智能缓存管理机制，自动控制待展示区与已使用区 (used) 的图片数量上限。
-    # 4. 具备极致的网络环境容错处理，无网或弱网时自动降级 fallback，避免死等。
+    # 3. 具备智能缓存管理机制，自动控制待展示区与已使用区的图片数量上限。
+    # 4. 具备极致的网络环境容错处理，无网或弱网时自动降级，避免死等。
     # 5. 具备自动清理 Fastfetch 内部生成的图片转换缓存功能，防止磁盘空间无感膨胀。
     # ==============================================================================
 
     # ================= 配置区域 =================
     
-    # [开关] 阅后即焚模式 (针对 Fastfetch 内部缓存)
-    # true  = 运行后强力清空 ~/.cache/fastfetch/images/ (防止转码缓存膨胀)
+    # 开关：阅后即焚模式，针对 Fastfetch 内部缓存
+    # true  = 运行后强力清空 ~/.cache/fastfetch/images/，防止转码缓存膨胀
     # false = 保留缓存
     set -l CLEAN_CACHE_MODE true
     
     # 每次补货下载多少张
     set -l DOWNLOAD_BATCH_SIZE 10
-    # 最大库存上限 (待展示区)
+    # 最大库存上限，即待展示区
     set -l MAX_CACHE_LIMIT 100
     # 库存少于多少张时开始补货
     set -l MIN_TRIGGER_LIMIT 60
     
-    # [新增] used 目录最大存放数量
+    # used 目录最大存放数量
     # 超过此数量将按照时间顺序删除最旧的文件
     set -l MAX_USED_LIMIT 50
     
     # ===========================================
+
+    # --- 0. 语言与提示语配置 ---
     
-    # --- 0. 参数解析与模式设置 ---
+    set -l IS_ZH true
+    if not string match -q -r "^zh" "$LANG"
+        set IS_ZH false
+    end
+
+    set -l MSG_WAIT "库存不够啦！正在去搬运新的图片，请稍等哦..."
+    set -l MSG_NET_ERR "网络好像不太通畅，无法下载新图片 QAQ"
+    set -l MSG_FAIL "图片获取失败了，这次只能先显示默认的 Logo 啦 QAQ"
+
+    if test "$IS_ZH" = false
+        set MSG_WAIT "Out of stock! Fetching new images, please wait..."
+        set MSG_NET_ERR "Network seems unstable, cannot download new images QAQ"
+        set MSG_FAIL "Failed to get image, falling back to default Logo QAQ"
+    end
+    
+    # --- 1. 参数解析与模式设置 ---
     
     set -l NSFW_MODE false
     # 检查环境变量
@@ -38,14 +55,46 @@ function f
     
     set -l ARGS_FOR_FASTFETCH
     for arg in $argv
-        if test "$arg" = "--nsfw"
+        # 拦截帮助指令
+        if test "$arg" = "-h"; or test "$arg" = "--help"
+            if test "$IS_ZH" = true
+                echo "========================================================"
+                echo "    f - 随机二次元美少女生成器暨 Fastfetch 终端看板娘"
+                echo "========================================================"
+                echo ""
+                echo "用法模式："
+                echo "  f       : 标准模式。随机生成一张美少女图片同时显示系统信息。"
+                echo "  fnsfw   : NSFW 模式。请注意身后环境安全。"
+                echo "  fwatch  : 持续运行模式。适合挂在副屏当作动态看板娘。"
+                echo ""
+                echo "进阶技巧："
+                echo "  你可以直接在命令后追加原生 fastfetch 的参数。"
+                echo "  例如 f --logo-width 40 可以单独控制本次生成的图片宽度。"
+                echo "========================================================"
+            else
+                echo "========================================================"
+                echo "    f - Random Anime Girl Generator and Fastfetch Mascot"
+                echo "========================================================"
+                echo ""
+                echo "Usage Modes:"
+                echo "  f       : Standard mode. Spawns a random safe for work anime girl for your terminal."
+                echo "  fnsfw   : NSFW mode. Triggered via f --nsfw or custom alias, please be aware of your surroundings."
+                echo "  fwatch  : Continuous mode. Use with the watch command, perfect for a secondary monitor mascot."
+                echo ""
+                echo "Advanced Tips:"
+                echo "  You can append native fastfetch arguments directly after the command."
+                echo "  For example, f --logo-width 40 will control the width of the generated image."
+                echo "========================================================"
+            end
+            return 0
+        else if test "$arg" = "--nsfw"
             set NSFW_MODE true
         else
             set -a ARGS_FOR_FASTFETCH $arg
         end
     end
     
-    # --- 1. 目录配置 ---
+    # --- 2. 目录配置 ---
     
     # 根据模式区分缓存目录和锁文件
     set -l CACHE_DIR
@@ -64,9 +113,9 @@ function f
     mkdir -p "$CACHE_DIR"
     mkdir -p "$USED_DIR"
     
-    # --- 2. 核心函数 ---
+    # --- 3. 核心函数 ---
 
-    # [修复] 抛弃脆弱的 1.1.1.1，使用苹果的全球探针节点，并使用 -I (HEAD请求) 极限提速
+    # 抛弃脆弱的 1.1.1.1，使用苹果的全球探针节点，并使用 -I 极限提速
     function check_network
         curl -sI --connect-timeout 2 "http://captive.apple.com/hotspot-detect.html" >/dev/null 2>&1
         return $status
@@ -87,10 +136,9 @@ function f
                     curl -s $TIMEOUT "https://api.waifu.pics/nsfw/neko" | jq -r '.url'
             end
         else
-            # === SFW (正常) API ===
+            # === SFW 正常 API ===
             switch $RAND
                 case 1
-                    # [修复] IsNsfwfalse 修正为 IsNsfw=false
                     curl -s $TIMEOUT "https://api.waifu.im/images?IncludedTags=waifu&IsNsfw=false" | jq -r '.images[0].url'
                 case 2
                     curl -s $TIMEOUT "https://nekos.best/api/v2/waifu" | jq -r '.results[0].url'
@@ -129,7 +177,7 @@ function f
         set -l check_network_def (functions check_network | string collect)
         
         fish -c "
-            # [核心修复 1] 忽略终端关闭带来的 SIGHUP 信号
+            # 忽略终端关闭带来的 SIGHUP 信号
             trap '' HUP
 
             # 重新定义需要的函数
@@ -140,7 +188,7 @@ function f
             # 使用 flock 防止并发
             flock -n 200 || exit 1
 
-            # [新增] 网络检查，没网就悄悄退出，不占后台资源
+            # 网络检查，没网就悄悄退出，不占后台资源
             if not check_network
                 exit 0
             end
@@ -159,7 +207,7 @@ function f
                 end
             end
             
-            # 2. 清理过多库存 (清理的是下载缓存区，不是 used 区)
+            # 2. 清理过多库存
             set FINAL_COUNT (find \$CACHE_DIR -maxdepth 1 -name '*.jpg' 2>/dev/null | wc -l)
             if test \$FINAL_COUNT -gt $MAX_CACHE_LIMIT
                 set DELETE_START_LINE (math $MAX_CACHE_LIMIT + 1)
@@ -167,11 +215,11 @@ function f
             end
         " 200>"$LOCK_FILE" &
         
-        # [核心修复 2] 将刚才丢入后台的 fish 子进程剥离终端控制
+        # 将刚才丢入后台的 fish 子进程剥离终端控制
         disown
     end
     
-    # --- 3. 主程序逻辑 ---
+    # --- 4. 主程序逻辑 ---
     
     set -l FILES $CACHE_DIR/*.jpg
     set -l NUM_FILES (count $FILES)
@@ -192,13 +240,13 @@ function f
         # 后台补货
         background_job >/dev/null 2>&1
     else
-        # 没库存，提示语更改并增加网络连通性容错
-        echo "库存不够啦！正在去搬运新的图片，请稍等哦..."
+        # 没库存，输出多语言提示语并增加网络连通性容错
+        echo "$MSG_WAIT"
         
         if check_network
             download_one_image
         else
-            echo "网络好像不太通畅，无法下载新图片 QAQ"
+            echo "$MSG_NET_ERR"
         end
         
         set FILES $CACHE_DIR/*.jpg
@@ -217,21 +265,19 @@ function f
         mv "$SELECTED_IMG" "$USED_DIR/"
         
         # === 逻辑: 检查 used 目录并清理旧图 ===
-        # 注意：fish 的 glob 展开如果文件太多可能会卡，但这里有 limit 限制所以还好
         set -l used_files $USED_DIR/*.jpg
         set -l used_count (count $used_files)
         
-        # 再次确认 count，因为如果没文件 $used_files 可能为空
+        # 再次确认 count
         if test "$used_count" -gt 0; and not test -f "$used_files[1]"
              set used_count 0
         end
 
         if test "$used_count" -gt "$MAX_USED_LIMIT"
-            # 计算需要跳过的行数 (保留最新的 N 张)
+            # 计算需要跳过的行数
             set -l skip_lines (math "$MAX_USED_LIMIT" + 1)
             
-            # 列出所有文件按时间倒序(tp)，取尾部(tail)，删除(rm)
-            # 2>/dev/null 防止目录为空时报错
+            # 列出所有文件按时间倒序，取尾部，删除
             set -l files_to_delete (ls -tp "$USED_DIR"/*.jpg 2>/dev/null | tail -n +$skip_lines)
             
             if test -n "$files_to_delete"
@@ -245,8 +291,8 @@ function f
             rm -rf "$HOME/.cache/fastfetch/images"
         end
     else
-        # 失败提示语更改
-        echo "图片获取失败了，这次只能先显示默认的 Logo 啦 QAQ"
+        # 失败提示语
+        echo "$MSG_FAIL"
         fastfetch $ARGS_FOR_FASTFETCH
     end
 end

@@ -311,9 +311,9 @@ apply_user_configs() {
     fi
     
     if command -v gsettings >/dev/null 2>&1; then
-        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" >/dev/null 2>&1
-        gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" >/dev/null 2>&1
-        gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty >/dev/null 2>&1
+       dbus-launch gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" >/dev/null 2>&1
+      dbus-launch  gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" >/dev/null 2>&1
+      dbus-launch  gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty >/dev/null 2>&1
     fi
     
     if [[ -f "$HOME/.config/gtk-3.0/bookmarks" ]]; then
@@ -347,6 +347,7 @@ apply_user_configs() {
     
     info "$(_t "Installing specific scripts & tools..." "正在安装特色脚本与占位文件...")"
     shorin link >/dev/null 2>&1
+    curl -sL shorin.xyz/niri-blur-toggle | bash >/dev/null 2>&1 || true
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
