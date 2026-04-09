@@ -444,6 +444,10 @@ apply_user_configs() {
     fi
     
     mkdir -p "$HOME/.local/share" "$HOME/.local/bin" 2>/dev/null
+    # 1. 检查如果是软链接 (旧版遗留)，则安全删除它
+    if [[ -L "$user_themes_dir" ]]; then
+        rm -f "$user_themes_dir"
+    fi
     # 将指定的主题从系统目录复制到用户目录
     for theme in "adw-gtk3" "adw-gtk3-dark"; do
         if [[ -d "/usr/share/themes/$theme" ]]; then
