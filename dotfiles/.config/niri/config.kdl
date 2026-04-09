@@ -95,6 +95,8 @@ spawn-at-startup "~/.config/niri/scripts/screenshot-sound.sh"
 spawn-at-startup "xhost" "+si:localuser:root"
 // dms 搜索
 spawn-at-startup "dsearch" "serve"
+// x11<--> 剪贴板同步
+spawn-at-startup "systemctl" "--usr" "start" "clipsync"
 
 // 取消启动niri时自动开启快捷键教程
 hotkey-overlay {
