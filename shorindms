@@ -40,7 +40,7 @@ CACHE_FILE="$HOME/.cache/shorin-dms-niri-software.cache"
 # ==========================================
 TARGET_SOFTWARE=(
     # Core utilities & Media
-    "satty" "slurp" "imv" "mpv" "firefox" "niri-sidebar-git"
+    "shorin-dms-niri-git" "xdg-desktop-portal-gnome" "satty" "slurp" "imv" "mpv" "firefox" "niri-sidebar-git"
     # Fonts
     "noto-fonts" "noto-fonts-cjk" "noto-fonts-emoji"
     # File Manager & Plugins
@@ -493,7 +493,7 @@ remove_dotfiles() {
     read -p "$(_t "Are you sure you want to continue? [y/N] " "确定要继续清理吗？ [y/N] ")" confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then return; fi
     
-    ask_for_sudo # 提权，用于后续删除系统级策略
+    ask_for_sudo
     
     cd "$TEMPLATE_DIR" || exit 1
     local removed_count=0
@@ -516,7 +516,40 @@ remove_dotfiles() {
     fi
     rm -f "$HOME/必看-Shorin-DMS-Niri使用方法.txt" 2>/dev/null
     
-    ok "$(_t "Cleanup complete! Removed $removed_count files." "清理完成！共精准移除了 $removed_count 个配置文件。您可使用 pacman 手动卸载软件。")"
+    ok "$(_t "Cleanup complete! Removed $removed_count files." "配置清理完成！共精准移除了 $removed_count 个配置文件。")"
+
+    # ==========================================
+    # 新增：温柔地处理软件包卸载建议
+    # ==========================================
+    if [[ -f "$CACHE_FILE" ]]; then
+        step "$(_t "Software Cleanup Suggestion" "配套软件清理建议")"
+        info "$(_t "Shorin DMS previously installed the following optional software:" "Shorin DMS 此前为您安装了以下配套软件：")"
+        
+        local cached_pkgs=()
+        mapfile -t cached_pkgs < "$CACHE_FILE"
+        local installed_pkgs=()
+
+        # 过滤出当前系统中仍然安装着的包
+        for pkg in "${cached_pkgs[@]}"; do
+            if pacman -Qq "$pkg" >/dev/null 2>&1; then
+                installed_pkgs+=("$pkg")
+            fi
+        done
+
+        if [[ ${#installed_pkgs[@]} -gt 0 ]]; then
+            # 简单列出部分，防止刷屏
+            echo -e "${C_YEL}${installed_pkgs[*]}${C_DEF}" | fold -w 80 -s
+            echo ""
+            warn "$(_t "Some of these packages (like firefox, kitty, fcitx5) might be used by you independently." "警告：其中某些软件（如 firefox, kitty, fcitx5）您可能在其他桌面环境下仍需要使用！")"
+            info "$(_t "If you want to completely remove them, review and run the following command manually:" "如果您确定不再需要它们，请自行检查并复制运行以下命令进行卸载：")"
+            echo ""
+            echo -e "    ${C_RED}paru -Rns ${installed_pkgs[*]}${C_DEF}"
+            echo ""
+        fi
+        
+        # 顺便清理缓存文件本身
+        rm -f "$CACHE_FILE"
+    fi
 }
 
 # ==========================================
