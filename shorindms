@@ -347,7 +347,7 @@ run_hide_desktop_file() {
         "waypaper.desktop" "xfce4-about.desktop" "cmake-gui.desktop" "assistant.desktop"
         "qdbusviewer.desktop" "linguist.desktop" "designer.desktop"
         "org.kde.drkonqi.coredump.gui.desktop" "org.kde.kwrite.desktop"
-        "org.freedesktop.MalcontentControl.desktop" "org.gnome.Nautilus.desktop"
+        "org.freedesktop.MalcontentControl.desktop" "org.gnome.Nautilus.desktop" "lstopo.desktop"
     )
     for app in "${apps_to_hide[@]}"; do hide_desktop_file "/usr/share/applications/$app"; done
 }
