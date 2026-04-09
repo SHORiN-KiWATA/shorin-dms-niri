@@ -443,19 +443,34 @@ apply_user_configs() {
         flatpak override --user --filesystem=xdg-config/fontconfig >/dev/null 2>&1
     fi
     
-    mkdir -p "$HOME/.local/share" "$HOME/.local/bin" 2>/dev/null
+    local user_themes_dir="$HOME/.local/share/themes"
+    
     # 1. 检查如果是软链接 (旧版遗留)，则安全删除它
     if [[ -L "$user_themes_dir" ]]; then
         rm -f "$user_themes_dir"
     fi
-    # 将指定的主题从系统目录复制到用户目录
+    
+    # 2. 清理之前复制错误的散落文件 (打扫你截图里的战场)
+    if [[ -d "$user_themes_dir" && ! -L "$user_themes_dir" ]]; then
+        rm -rf "$user_themes_dir/gtk-3.0" "$user_themes_dir/gtk-4.0" "$user_themes_dir/index.theme" 2>/dev/null
+    fi
+    
+    # 3. 创建真实的父目录
+    mkdir -p "$user_themes_dir" "$HOME/.local/bin" 2>/dev/null
+    
+    # 4. 绝对精准复制 (防溢出写法)
     for theme in "adw-gtk3" "adw-gtk3-dark"; do
         if [[ -d "/usr/share/themes/$theme" ]]; then
-            # 使用 -a 保留权限，-u 表示仅在源文件较新时覆盖更新
-            cp -au "/usr/share/themes/$theme" "$HOME/.local/share/themes/" 2>/dev/null || true
+            # 明确创建目标的同名子目录
+            mkdir -p "$user_themes_dir/$theme"
+            # 使用 /. 明确要求：把源目录里的"内容"，复制到刚刚建好的子目录里
+            cp -au "/usr/share/themes/$theme"/. "$user_themes_dir/$theme/" 2>/dev/null || true
         fi
     done
-    if command -v kitty >/dev/null 2>&1; then ln -sfn /usr/bin/kitty "$HOME/.local/bin/xterm" 2>/dev/null; fi
+
+    if command -v kitty >/dev/null 2>&1; then 
+        ln -sfn /usr/bin/kitty "$HOME/.local/bin/xterm" 2>/dev/null
+    fi
     
     run_hide_desktop_file
     shorin link >/dev/null 2>&1 || true
