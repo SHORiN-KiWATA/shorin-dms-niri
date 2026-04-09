@@ -106,8 +106,45 @@ manage_software() {
     local mode="$1"
     local helper=$(get_aur_helper)
     
-    step "$(_t "Checking Optional Dependencies" "检查并安装全家桶软件")"
+    step "$(_t "Checking Optional Dependencies" "检查并同步全家桶软件")"
     
+    # ======== 1. 检查已被移除/废弃的软件 ========
+    if [[ -f "$CACHE_FILE" ]]; then
+        local old_software=()
+        # 读取旧的缓存名单
+        mapfile -t old_software < "$CACHE_FILE"
+        
+        local deprecated=()
+        for old_pkg in "${old_software[@]}"; do
+            local found=0
+            # 检查旧包是否还在新名单里
+            for new_pkg in "${TARGET_SOFTWARE[@]}"; do
+                if [[ "$old_pkg" == "$new_pkg" ]]; then
+                    found=1
+                    break
+                fi
+            done
+            
+            # 如果不在新名单里，且用户系统上还装了这个软件，就记录下来
+            if [[ $found -eq 0 ]]; then
+                if pacman -Qq "$old_pkg" >/dev/null 2>&1; then
+                    deprecated+=("$old_pkg")
+                fi
+            fi
+        done
+        
+        # 打印废弃软件日志
+        if [[ ${#deprecated[@]} -gt 0 ]]; then
+            warn "$(_t "The following packages are no longer required by Shorin DMS:" "Shorin DMS 已不再将以下软件作为默认组件:")"
+            for dpkg in "${deprecated[@]}"; do
+                echo -e "  ${C_YEL}- $dpkg${C_DEF}"
+            done
+            info "$(_t "You can manually remove them if not needed: sudo pacman -Rns ${deprecated[*]}" "如果您不再需要它们，可手动清理: sudo pacman -Rns ${deprecated[*]}")"
+            echo "" # 留个空行更美观
+        fi
+    fi
+
+    # ======== 2. 检查并安装缺失的新软件 ========
     local to_install=()
     for pkg in "${TARGET_SOFTWARE[@]}"; do
         if ! pacman -Qq "$pkg" >/dev/null 2>&1; then
@@ -116,20 +153,23 @@ manage_software() {
     done
     
     if [ ${#to_install[@]} -eq 0 ]; then
-        ok "$(_t "All optional software is already installed." "所有配套软件均已安装。")"
+        ok "$(_t "All required optional software is already installed." "当前版本的所有配套软件均已安装。")"
     else
-        info "$(_t "Installing missing software in the background..." "正在后台静默安装缺失的软件...")"
-        # 屏蔽 yay 交互并进行静默安装
+        info "$(_t "Installing newly added/missing software in the background..." "正在后台静默安装新增或缺失的软件...")"
         YAY_NO_CONFIRM=1 $helper -S --needed --noconfirm "${to_install[@]}"
         
         if [ $? -eq 0 ]; then
             ok "$(_t "Software installed successfully." "软件静默安装完成。")"
         else
-            warn "$(_t "Some software failed to install. Please check AUR availability." "部分软件可能安装失败，请检查网络或 AUR 状态。")"
+            warn "$(_t "Some software failed to install. Please check network or AUR." "部分软件可能安装失败，请检查网络或 AUR 状态。")"
         fi
     fi
-    info "$(_t "Marking software as explicitly installed to prevent accidental removal..." "正在标记软件安装状态，防止被作为孤儿包误删...")"
+    
+    # ======== 3. 标记免死金牌 ========
+    info "$(_t "Marking software as explicitly installed to prevent accidental removal..." "正在保护软件不被作为孤儿包误删...")"
     sudo pacman -D --asexplicit "${TARGET_SOFTWARE[@]}" >/dev/null 2>&1
+
+    # ======== 4. 更新缓存 ========
     mkdir -p "$(dirname "$CACHE_FILE")"
     printf "%s\n" "${TARGET_SOFTWARE[@]}" > "$CACHE_FILE"
 }
