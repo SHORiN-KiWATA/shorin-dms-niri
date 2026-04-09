@@ -37,7 +37,7 @@ input {
     keyboard {
         xkb {
         }
-        repeat-delay 350
+        repeat-delay 250
 	    repeat-rate 35
     }
 
