@@ -66,7 +66,7 @@ f4可以打开菜单。如果出现卡A的情况可以试试按右shift解决。
 【实用命令】
 运行shorin命令可以看到所有可用的便利命令
 pac 安装软件(安装软件还可以用bazaar，这是flatpak软件商城)
-pacr 卸载软件（因为暂时没拆分aur依赖，所以想删除桌面依赖的软件要用-Rddns无视依赖关系删除，可能会有风险，谨慎使用。）
+pacr 卸载软件
 mirror-update 更新镜像源
 sysup 更新系统
 clean 系统清理
