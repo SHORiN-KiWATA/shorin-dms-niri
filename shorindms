@@ -444,7 +444,13 @@ apply_user_configs() {
     fi
     
     mkdir -p "$HOME/.local/share" "$HOME/.local/bin" 2>/dev/null
-    ln -sfn /usr/share/themes "$HOME/.local/share/themes" 2>/dev/null
+    # 将指定的主题从系统目录复制到用户目录
+    for theme in "adw-gtk3" "adw-gtk3-dark"; do
+        if [[ -d "/usr/share/themes/$theme" ]]; then
+            # 使用 -a 保留权限，-u 表示仅在源文件较新时覆盖更新
+            cp -au "/usr/share/themes/$theme" "$HOME/.local/share/themes/" 2>/dev/null || true
+        fi
+    done
     if command -v kitty >/dev/null 2>&1; then ln -sfn /usr/bin/kitty "$HOME/.local/bin/xterm" 2>/dev/null; fi
     
     run_hide_desktop_file
