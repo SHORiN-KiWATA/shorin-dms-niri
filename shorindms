@@ -72,20 +72,31 @@ UPDATE_IGNORE=(
 )
 
 # ==========================================
-# 4. Sudo 提前提权与保活机制 (Keep-alive)
+# 4. Sudo 智能提权与保活机制 (Keep-alive)
 # ==========================================
 ask_for_sudo() {
+    # 探针：检查当前是否已经拥有免密 sudo 权限 (比如被外部自动化脚本设置了 NOPASSWD)
+    if sudo -n true 2>/dev/null; then
+        # 如果探针成功，说明不需要密码，直接挂起保活后台并退出函数
+        (while kill -0 "$$" 2>/dev/null; do
+            sudo -n true >/dev/null 2>&1
+            sleep 60
+        done) 2>/dev/null &
+        return 0
+    fi
+
+    # 如果探针失败，说明真的需要用户手动输入密码
     step "$(_t "Requesting Administrator Privileges" "请求管理员权限进行环境部署")"
-    info "$(_t "Please enter your password for sudo. " "请输入您的密码。")"
+    info "$(_t "Please enter your password for sudo. It will be cached for the whole process." "请输入您的密码。系统将为整个安装过程保持免密状态。")"
     
     sudo -v || {
         err "$(_t "Sudo authentication failed. Exiting." "密码验证失败，退出程序。")"
         exit 1
     }
 
-    # 开启后台线程，每 60 秒刷新一次免密令牌
+    # 挂起保活后台
     (while kill -0 "$$" 2>/dev/null; do
-        sudo -n true
+        sudo -n true >/dev/null 2>&1
         sleep 60
     done) 2>/dev/null &
     
