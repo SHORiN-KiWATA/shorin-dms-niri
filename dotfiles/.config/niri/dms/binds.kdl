@@ -20,7 +20,7 @@ binds {
     Mod+Alt+O hotkey-overlay-title="AI助手 opencode agent" { spawn "kitty" "--class" "opencode" "-e" "opencode"; }        
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+T hotkey-overlay-title="终端 Terminal" { spawn "kitty" "--single-instance"; }
+    Mod+T hotkey-overlay-title="终端 Terminal" { spawn "kitty"; }
     // settings
     Mod+F2 hotkey-overlay-title="设置 Settings" { spawn-sh "dms ipc call settings focusOrToggle";}
     Mod+F3 hotkey-overlay-title="录屏 Screen record" { spawn "shorin-screenrec-menu";}
