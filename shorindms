@@ -171,20 +171,43 @@ manage_software() {
         info "$(_t "Installing newly added/missing software in the background..." "正在后台静默安装新增或缺失的软件...")"
         YAY_NO_CONFIRM=1 $helper -S --needed --noconfirm "${to_install[@]}"
         
-        if [ $? -eq 0 ]; then
-            ok "$(_t "Software installed successfully." "软件静默安装完成。")"
+        # --- 新增：后置严谨验证环节 ---
+        local failed_pkgs=()
+        for pkg in "${to_install[@]}"; do
+            if ! pacman -Qq "$pkg" >/dev/null 2>&1; then 
+                failed_pkgs+=("$pkg")
+            fi
+        done
+
+        if [ ${#failed_pkgs[@]} -eq 0 ]; then
+            ok "$(_t "All missing software installed successfully." "所有缺失软件均已成功安装。")"
         else
-            warn "$(_t "Some software failed to install. Please check network or AUR." "部分软件可能安装失败，请检查网络或 AUR 状态。")"
+            warn "$(_t "The following packages failed to install/build:" "以下软件安装或编译失败，请检查网络或 AUR 状态:")"
+            for fpkg in "${failed_pkgs[@]}"; do
+                echo -e "  ${C_RED}- $fpkg${C_DEF}"
+            done
+            # 不阻断流程，允许继续执行系统配置
+            info "$(_t "Script will continue, but some features might be missing." "脚本将继续执行，但由于软件缺失，部分功能可能无法正常工作。")"
         fi
+        # ----------------------------
     fi
     
-    # ======== 3. 标记免死金牌 ========
-    info "$(_t "Marking software as explicitly installed to prevent accidental removal..." "正在保护软件不被作为孤儿包误删...")"
-    sudo pacman -D --asexplicit "${TARGET_SOFTWARE[@]}" >/dev/null 2>&1
+    # ======== 3. 标记免死金牌与写入缓存 ========
+    # --- 修复：只把真正安装成功的软件写入缓存，防止由于失败导致下次跳过检测 ---
+    local actually_installed=()
+    for pkg in "${TARGET_SOFTWARE[@]}"; do
+        if pacman -Qq "$pkg" >/dev/null 2>&1; then 
+            actually_installed+=("$pkg")
+        fi
+    done
 
-    # ======== 4. 更新缓存 ========
-    mkdir -p "$(dirname "$CACHE_FILE")"
-    printf "%s\n" "${TARGET_SOFTWARE[@]}" > "$CACHE_FILE"
+    if [ ${#actually_installed[@]} -gt 0 ]; then
+        info "$(_t "Marking installed software as explicitly installed to prevent accidental removal..." "正在保护已安装软件不被作为孤儿包误删...")"
+        sudo pacman -D --asexplicit "${actually_installed[@]}" >/dev/null 2>&1
+
+        mkdir -p "$(dirname "$CACHE_FILE")"
+        printf "%s\n" "${actually_installed[@]}" > "$CACHE_FILE"
+    fi
 }
 
 # ==========================================
