@@ -167,3 +167,6 @@ include "dms/cursor.kdl"
 include "dms/outputs.kdl"
 include "dms/colors.kdl"
 
+// 取消下面这行的注释启动shorin预先准备好的blur配置
+//include "blur.kdl"
+
