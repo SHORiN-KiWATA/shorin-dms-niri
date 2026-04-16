@@ -58,7 +58,7 @@ TARGET_SOFTWARE=(
     # Input Method
     "fcitx5" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime" "rime-ice-git" "rime-wubi"
     # other
-    'clipsync-git'
+    'linuxqq-clipsync-git'
 )
 
 # 系统级强制保护黑名单
