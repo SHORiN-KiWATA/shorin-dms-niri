@@ -99,7 +99,7 @@ for line in sys.stdin:
 	<name>压缩视频大小</name>
 	<submenu></submenu>
 	<unique-id>1770021157399945-1</unique-id>
-	<command>kitty --class floating-term bash -c &apos;f=&quot;$1&quot;; out=&quot;$(echo &quot;$f&quot; | sed &quot;s/\.[^.]*$//&quot;)_compressed.mp4&quot;; echo &quot;正在处理: $f&quot;; if ffmpeg -i &quot;$f&quot; -vf &quot;scale=trunc(iw/2)*2:trunc(ih/2)*2&quot; -c:v libx264 -crf 26 -preset slow -c:a aac -b:a 128k -pix_fmt yuv420p &quot;$out&quot;; then echo -e &quot;\n✅ 压缩完成！文件已保存为: $out&quot;; else echo -e &quot;\n❌ 压缩失败，请查看上方报错信息。&quot;; fi; read -n 1 -s -r -p &quot;按任意键退出...&quot;&apos; -- %f</command>
+	<command>kitty --class floating-term compressvideos -p %F</command>
 	<description></description>
 	<range>*</range>
 	<patterns>*</patterns>
