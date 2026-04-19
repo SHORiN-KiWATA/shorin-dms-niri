@@ -9,6 +9,8 @@ binds {
     Mod+Shift+Slash hotkey-overlay-title="快捷键教程 Keybind tutorial" { spawn "~/.config/niri/scripts/niri-binds"; }
 
     Mod+F1 hotkey-overlay-title="开关输入法 Toggle fcitx" {spawn-sh "pkill fcitx5 || fcitx5 ";}
+    Mod+F2 hotkey-overlay-title="设置 Settings" { spawn-sh "dms ipc call settings focusOrToggle";}
+    Mod+F3 hotkey-overlay-title="录屏 Screen record" { spawn "shorin-screenrec-menu";}
     Mod+F5 hotkey-overlay-title="快速存档 Quick save" {spawn "quicksave";}
     Mod+F8 hotkey-overlay-title="快速读档 Quick load" {spawn "quickload";}
 
@@ -23,8 +25,6 @@ binds {
     Mod+T hotkey-overlay-title="共享终端 Terminal" { spawn "kitty" "--single-instance"; }
     Mod+return hotkey-overlay-title="独立终端 Terminal" { spawn "kitty"; }
     // settings
-    Mod+F2 hotkey-overlay-title="设置 Settings" { spawn-sh "dms ipc call settings focusOrToggle";}
-    Mod+F3 hotkey-overlay-title="录屏 Screen record" { spawn "shorin-screenrec-menu";}
     // 文档管理器。如果有thunar的话会优先打开thunar，没有的话会打开nautilus
     Mod+E hotkey-overlay-title="文档管理器 Filemanager" { spawn-sh "thunar || env GSK_RENDERER=gl GTK_IM_MODULE=fcitx  nautilus"; }
     // 另一个打开nautilus的快捷键，主要是为了在同时安装thunar和nautilus的情况下打开naultilus
@@ -36,13 +36,12 @@ binds {
     Mod+Shift+F10 hotkey-overlay-title="随机下载壁纸 Random wallpaper" { spawn "~/.local/bin/random-anime-wallpaper-dms";}
 
     Mod+O hotkey-overlay-title="切换总览界面 toggle overview" repeat=false { toggle-overview; }
-    Mod+G repeat=false { toggle-overview; }
+    Mod+G hotkey-overlay-title="切换总览界面 toggle overview" repeat=false { toggle-overview; }
     // 关闭聚焦窗口
     Mod+Q hotkey-overlay-title="关闭聚焦窗口 Close focus window" repeat=false { close-window; }
     Alt+F4 hotkey-overlay-title=null repeat=false { close-window; }
 
     // niri-sidebar扩展相关
-    // 警告：这是实验性功能
     // 切换 移动聚焦窗口至侧边栏 （建议配合切换浮动聚焦的快捷键使用，我设置的是super+n）
     Mod+Alt+S hotkey-overlay-title="收起窗口 Move to Sidebar" { spawn "niri-sidebar" "toggle-window"; }
     Mod+M hotkey-overlay-title="收起窗口 Move to Sidebar" { spawn "niri-sidebar" "toggle-window"; }
@@ -53,6 +52,11 @@ binds {
     // 重新排列侧边栏中的窗口（侧边栏中的窗口本质是一个浮动窗口，你有时候可能会把它移动到别的地方
     // 例如 ctrl+c居中。此时按下此键可以重新排列）
     Mod+Alt+R hotkey-overlay-title="重置侧边栏 Reorder Sidebar"  { spawn "niri-sidebar" "reorder"; }
+
+    // 以下功能需要安装nirius并启动niriusd
+    //Mod+Ctrl+G hotkey-overlay-title="在切换工作区时自动跟随 Follow when switch workspaces" {spawn "nirius" "toggle-follow-mode" ;}
+    //Mod+Shift+Q hotkey-overlay-title="快速聚焦到QQ Quick focus QQ" {spawn "nirius" "focus" "--app-id" "QQ" ;}
+    //Mod+Shift+W hotkey-overlay-title="快速聚焦到微信 Quick focus Wechat" {spawn "nirius" "focus" "--app-id" "wechat" ;}
 
     
     // mod+鼠标中键 关闭窗口
