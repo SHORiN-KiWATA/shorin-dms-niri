@@ -4,10 +4,8 @@ pid=$(grep -oP 'PID:\s*\K\d+' <<< "$output")
 
 if [[ -n $pid ]]; then
     if kill -9 "$pid" 2>/dev/null; then
-        notify-send "Killed" "PID $pid terminated (SIGKILL)"
+        notify-send "Killed" "PID $pid terminated (SIGKILL)" && pw-play /usr/share/sounds/freedesktop/stereo/dialog-error.oga
     else
         notify-send "Failed" "Could not kill PID $pid"
     fi
-else
-    notify-send "Aborted" "No PID found or no window selected"
 fi
