@@ -4,11 +4,13 @@
 # 通过鼠标点击强制结束 (SIGKILL) 任意窗口。
 # 完美支持 Wayland 原生与 XWayland 代理窗口的独立精准击杀。
 # 具备多语言自适应 (i18n) 与智能依赖提示功能。
+#
 # 实现原理：
-# 1. 通过niri msg pick-window点选窗口
-# 2. 利用窗口的PID，通过进程名称判断它是xwyland还是wayland
-# 3. 如果是wayland的话直接kill -9 <PID>
-# 4. 如过是xwayland，利用xprop获取聚焦窗口的PID后杀死
+# 1. 通过 niri msg pick-window 点选窗口
+# 2. 利用窗口的 PID，通过进程名称判断它是 xwayland 还是 wayland
+# 3. 获取真实的底层 PID（Wayland 直接取用，XWayland 利用 xprop 获取焦点窗口的真实 PID）
+# 4. 向上追溯该真实 PID，找到所属应用的根进程 (App Root)，并利用防火墙逻辑避开系统进程
+# 5. 从根进程向下遍历收集所有子孙进程，利用 kill -9 执行“九头蛇绞杀”，防止多进程软件死灰复燃
 
 # ==========================================
 # 0. 多语言 (Locale) 自适应支持
@@ -19,12 +21,9 @@ if [[ "${LANG}" == zh_* ]]; then
     STR_ERR_INFO_TITLE="获取信息失败"
     STR_ERR_INFO_MSG="无法获取窗口或进程信息。"
     STR_ERR_KILL_TITLE="结束失败"
-    STR_ERR_KILL_MSG="无法强制结束目标 PID: %s"
-    STR_ERR_X11_PID="无法从 X11 窗口中提取真实 PID。"
-    STR_ERR_X11_WID="未能在底层定位到活动状态的 X11 窗口。"
-    STR_SUCC_XWL_TITLE="强制杀死 (XWayland)"
-    STR_SUCC_WL_TITLE="强制杀死 (Wayland)"
-    STR_SUCC_MSG="应用: %s\n目标进程 (PID: %s) 已被终止。"
+    STR_ERR_KILL_MSG="无法提取目标真实 PID。"
+    STR_SUCC_TITLE="强制杀死 (%s)"
+    STR_SUCC_MSG="应用: %s\n连根拔起: 成功摧毁 %s 个相关进程。"
     STR_UNKNOWN_APP="未知应用"
 else
     STR_ERR_DEP_TITLE="Missing Dependency"
@@ -32,12 +31,9 @@ else
     STR_ERR_INFO_TITLE="Info Error"
     STR_ERR_INFO_MSG="Could not determine window or process information."
     STR_ERR_KILL_TITLE="Kill Failed"
-    STR_ERR_KILL_MSG="Could not kill target PID: %s"
-    STR_ERR_X11_PID="Could not extract real PID from the X11 window."
-    STR_ERR_X11_WID="Could not locate the active X11 window."
-    STR_SUCC_XWL_TITLE="Headshot! (XWayland)"
-    STR_SUCC_WL_TITLE="Headshot! (Wayland)"
-    STR_SUCC_MSG="App: %s\nTarget process (PID: %s) terminated."
+    STR_ERR_KILL_MSG="Could not extract target real PID."
+    STR_SUCC_TITLE="Headshot! (%s)"
+    STR_SUCC_MSG="App: %s\nHydra Kill: %s processes terminated."
     STR_UNKNOWN_APP="Unknown App"
 fi
 
@@ -83,7 +79,7 @@ notify_and_play() {
 # ==========================================
 # 3. 抓取目标窗口信息
 # ==========================================
-# 执行命令并捕获退出码。如果用户按 Esc 取消，niri 通常会返回非零退出码。
+# 执行命令并捕获退出码。如果用户按 Esc 取消，返回非零退出码，静默退出
 if ! output=$(niri msg pick-window 2>/dev/null); then
     exit 0
 fi
@@ -98,62 +94,87 @@ pid=$(grep -oP 'PID:\s*\K\d+' <<< "$output")
 app_id=$(grep -oP 'App ID:\s*"\K[^"]+' <<< "$output")
 app_name="${app_id:-$STR_UNKNOWN_APP}"
 
-# 如果正则没有提取到 PID（比如用户点到了无效区域或 Niri 输出了其他提示信息）
-# 这属于正常的“未命中”操作，应该静默退出，而不是发报错通知。
+# 如果正则没有提取到 PID（未命中合法窗口），静默退出
 if [[ -z "$pid" ]]; then
     exit 0
 fi
 
-# 如果确实抓到了 PID，但是此时进程文件不存在了
+# 如果确实抓到了 PID，但此时进程已不存在，发出异常通知
 if [[ ! -f "/proc/$pid/comm" ]]; then
     notify-send "$STR_ERR_INFO_TITLE" "$STR_ERR_INFO_MSG" -a "Window Killer" -i dialog-error
     exit 1
 fi
 
 # ==========================================
-# 4. 核心判定与击杀逻辑
+# 4. 判定协议类型并获取真实 PID
 # ==========================================
 process_name=$(cat "/proc/$pid/comm")
 process_name_lower="${process_name,,}"
 
 if [[ "$process_name_lower" == *"xwayland"* ]]; then
-    # ---------------------------------------------------------
-    # 【XWayland 窗口逻辑：焦点同步精准狙击】
-    # ---------------------------------------------------------
+    proto_str="XWayland"
     # 给内核与 X11 服务端预留 50 毫秒的时间传递和同步焦点
     sleep 0.05
-    
     # 顺着焦点，询问 X11 当前活动的窗口 ID
     active_wid=$(xprop -root -notype _NET_ACTIVE_WINDOW 2>/dev/null | grep -o '0x[0-9a-fA-F]\+')
-    
-    if [[ -n "$active_wid" && "$active_wid" != "0x0" ]]; then
-        # 顺藤摸瓜：提取这个 X11 窗口绑定的真实底层 Linux PID
-        real_pid=$(xprop -id "$active_wid" -notype _NET_WM_PID 2>/dev/null | grep -oP '\d+')
-        
-        if [[ -n "$real_pid" ]]; then
-            if kill -9 "$real_pid" 2>/dev/null; then
-                printf -v succ_msg "$STR_SUCC_MSG" "$app_name" "$real_pid"
-                notify_and_play "$STR_SUCC_XWL_TITLE" "$succ_msg"
-            else
-                printf -v err_msg "$STR_ERR_KILL_MSG" "$real_pid"
-                notify-send "$STR_ERR_KILL_TITLE" "$err_msg" -a "Window Killer" -i dialog-error
-            fi
-        else
-            notify-send "$STR_ERR_KILL_TITLE" "$STR_ERR_X11_PID" -a "Window Killer" -i dialog-error
-        fi
-    else
-        notify-send "$STR_ERR_KILL_TITLE" "$STR_ERR_X11_WID" -a "Window Killer" -i dialog-error
-    fi
-
+    # 顺藤摸瓜：提取这个 X11 窗口绑定的真实底层 Linux PID
+    real_pid=$(xprop -id "$active_wid" -notype _NET_WM_PID 2>/dev/null | grep -oP '\d+')
 else
-    # ---------------------------------------------------------
-    # 【原生 Wayland 窗口逻辑：直接拔管】
-    # ---------------------------------------------------------
-    if kill -9 "$pid" 2>/dev/null; then
-        printf -v succ_msg "$STR_SUCC_MSG" "$app_name" "$pid"
-        notify_and_play "$STR_SUCC_WL_TITLE" "$succ_msg"
-    else
-        printf -v err_msg "$STR_ERR_KILL_MSG" "$pid"
-        notify-send "$STR_ERR_KILL_TITLE" "$err_msg" -a "Window Killer" -i dialog-error
-    fi
+    proto_str="Wayland"
+    real_pid="$pid"
 fi
+
+if [[ -z "$real_pid" ]]; then
+    notify-send "$STR_ERR_KILL_TITLE" "$STR_ERR_KILL_MSG" -a "Window Killer" -i dialog-error
+    exit 1
+fi
+
+# ==========================================
+# 5. 九头蛇绞杀逻辑 (Hydra Kill)
+# ==========================================
+# 向上追溯，寻找进程家族的老祖宗 (App Root)
+app_root=$real_pid
+current=$real_pid
+
+while true; do
+    ppid=$(ps -o ppid= -p "$current" 2>/dev/null | tr -d ' ')
+    
+    # 如果找不到父进程，或者父进程是系统最高层 PID 1，停止追溯
+    if [[ -z "$ppid" || "$ppid" == "1" ]]; then
+        break
+    fi
+    
+    pname=$(ps -o comm= -p "$ppid" 2>/dev/null)
+    
+    # 【核心防火墙】：遇到桌面环境、终端、系统核心服务，立刻停止溯源！
+    if [[ "$pname" =~ ^(systemd|niri|bash|zsh|fish|tmux|screen|xwayland.*|sshd|login|init|sway|hyprland)$ ]]; then
+        break
+    fi
+    
+    app_root=$ppid
+    current=$ppid
+done
+
+# 向下递归，收集家族所有子孙 PID
+get_descendants() {
+    local p=$1
+    echo "$p"
+    # pgrep -P 获取直接子进程
+    for c in $(pgrep -P "$p" 2>/dev/null); do
+        get_descendants "$c"
+    done
+}
+
+family_pids=$(get_descendants "$app_root")
+pid_count=$(echo "$family_pids" | wc -w)
+
+# 执行联合绞杀：把所有收集到的 PID 一次性全部强制终止
+kill -9 $family_pids 2>/dev/null
+
+# ==========================================
+# 6. 发送战果通知与音效
+# ==========================================
+printf -v final_title "$STR_SUCC_TITLE" "$proto_str"
+printf -v final_msg "$STR_SUCC_MSG" "$app_name" "$pid_count"
+
+notify_and_play "$final_title" "$final_msg"
