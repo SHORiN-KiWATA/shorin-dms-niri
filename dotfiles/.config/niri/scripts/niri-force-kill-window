@@ -83,9 +83,12 @@ notify_and_play() {
 # ==========================================
 # 3. 抓取目标窗口信息
 # ==========================================
-output=$(niri msg pick-window 2>/dev/null)
+# 执行命令并捕获退出码。如果用户按 Esc 取消，niri 通常会返回非零退出码。
+if ! output=$(niri msg pick-window 2>/dev/null); then
+    exit 0
+fi
 
-# 未选中窗口直接退出（用户取消点击）
+# 如果没有任何输出，直接退出
 if [[ -z "$output" ]]; then
     exit 0
 fi
@@ -95,7 +98,14 @@ pid=$(grep -oP 'PID:\s*\K\d+' <<< "$output")
 app_id=$(grep -oP 'App ID:\s*"\K[^"]+' <<< "$output")
 app_name="${app_id:-$STR_UNKNOWN_APP}"
 
-if [[ -z "$pid" || ! -f "/proc/$pid/comm" ]]; then
+# 如果正则没有提取到 PID（比如用户点到了无效区域或 Niri 输出了其他提示信息）
+# 这属于正常的“未命中”操作，应该静默退出，而不是发报错通知。
+if [[ -z "$pid" ]]; then
+    exit 0
+fi
+
+# 如果确实抓到了 PID，但是此时进程文件不存在了
+if [[ ! -f "/proc/$pid/comm" ]]; then
     notify-send "$STR_ERR_INFO_TITLE" "$STR_ERR_INFO_MSG" -a "Window Killer" -i dialog-error
     exit 1
 fi
