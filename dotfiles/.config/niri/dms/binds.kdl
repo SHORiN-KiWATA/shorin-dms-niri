@@ -39,7 +39,8 @@ binds {
     Mod+G hotkey-overlay-title="切换总览界面 toggle overview" repeat=false { toggle-overview; }
     // 关闭聚焦窗口
     Mod+Q hotkey-overlay-title="关闭聚焦窗口 Close focus window" repeat=false { close-window; }
-    Alt+F4  hotkey-overlay-title="强制杀死窗口" repeat=false { spawn "~/.config/niri/scripts/niri-force-kill-window"; }
+    Alt+F4  hotkey-overlay-title="强制杀死窗口 Force kill -9 window" repeat=false { spawn "~/.config/niri/scripts/niri-force-kill-window"; }
+    Alt+Shift+F4  hotkey-overlay-title="强制杀死窗口以及关联进程 Force kill -9 a window tree" repeat=false { spawn "~/.config/niri/scripts/niri-force-kill-window" "-f"; }
 
     // niri-sidebar扩展相关
     // 切换 移动聚焦窗口至侧边栏 （建议配合切换浮动聚焦的快捷键使用，我设置的是super+n）
