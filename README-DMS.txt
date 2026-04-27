@@ -85,7 +85,8 @@ quicksave 快速存档
 gdu：磁盘空间管理
 nmtui：网络配置工具
 impala：wifi连接工具，tab键切换，上下左右选择，回车确认（需要iwd后端）
-btop：任务管理器
+btop：终端任务管理器
+gtop：dms做的终端任务管理器
 yazi：文档管理器
 fastfetch：系统信息显示工具
 
