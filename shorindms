@@ -44,7 +44,7 @@ TARGET_SOFTWARE=(
     # Fonts
     "noto-fonts" "noto-fonts-cjk" "noto-fonts-emoji"
     # File Manager & Plugins
-    "ffmpegthumbnailer" "gvfs-smb" "nautilus-open-any-terminal" "file-roller" "icoextract"
+    "ffmpegthumbnailer" "gvfs-smb" "nautilus-open-any-terminal" "file-roller" "icoextract" "python-pillow"
     "gnome-keyring" "gst-plugins-base" "gst-plugins-good" "gst-libav" "nautilus"
     "xdg-desktop-portal-gtk" "thunar" "tumbler" "poppler-glib" "thunar-archive-plugin"
     "thunar-volman" "gvfs-mtp" "gvfs-gphoto2" "webp-pixbuf-loader" "libgsf"
