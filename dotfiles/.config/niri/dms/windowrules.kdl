@@ -78,6 +78,7 @@ window-rule {
 // 开启后不聚焦的窗口
 window-rule {
     match app-id="QQ" title="资料卡"
+    match app-id="QQ" title="天气"
     open-focused false
 }
 
