@@ -120,4 +120,20 @@ for line in sys.stdin:
 	<text-files/>
 	<video-files/>
 </action>
+<action>
+	<icon></icon>
+	<name>获取所有权</name>
+	<submenu></submenu>
+	<unique-id>1777472832087395-1</unique-id>
+	<command>getown %F</command>
+	<description></description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
 </actions>
