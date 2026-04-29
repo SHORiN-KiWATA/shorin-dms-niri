@@ -75,6 +75,12 @@ window-rule {
     match app-id="niri-hotkey-menu"
     open-floating true
 }
+// 开启后不聚焦的窗口
+window-rule {
+    match app-id="QQ" title="资料卡"
+    open-focused false
+}
+
 //快速终端和笔记
 window-rule {
     match app-id="quickterminal"
