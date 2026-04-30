@@ -203,6 +203,12 @@ if [[ "$ACTION" == "menu" ]]; then
     SOURCE="pick-window"
 
 elif [[ "$ACTION" == "focus" ]]; then
+    # 提前检查是否有聚焦窗口，没有则静默退出
+    _focused=$(niri msg focused-window 2>/dev/null)
+    if [[ $? -ne 0 ]] || [[ -z "$_focused" ]] || echo "$_focused" | grep -iq "no window is focused"; then
+        exit 0
+    fi
+
     # focus 专属菜单，没有颜色项
     focus_items=(
         "$STR_MENU_WIN_ALL"
