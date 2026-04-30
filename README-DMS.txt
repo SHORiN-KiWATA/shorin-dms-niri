@@ -17,7 +17,7 @@ sudo systemctl restart NetworkManager
 shorindms命令可以对shoridms桌面进行init初始化、update更新、remove移除等操作，操作前都会备份配置文件到.cache下，如果你有东西被意外覆盖可以去找回。详情看shorindms命令的帮助信息。
 
 【Ai助手】
-有一个叫作opencode的开源ai助手，默认键位是Mod+Alt+O（英文字母O），有免费模型可以用。如果有查找文件、查询系统信息之类的简单的需求直接询问这个Ai助手。PS: 谨慎使用ai修改文件。
+有一个叫作opencode的开源ai助手，默认键位是Mod+Alt+O（英文字母O），有免费模型可以用。如果有查找文件、查询系统信息之类的简单的需求直接询问这个Ai助手，例如："我的快捷键配置文件在哪里？""我要怎么安装软件"等。PS: 谨慎使用ai修改文件。
 
 【重要按键】
 super+shift+/ 打开按键教程
