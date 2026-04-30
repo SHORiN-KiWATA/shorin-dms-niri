@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <actions>
 <action>
+	<icon></icon>
+	<name>复制路径</name>
+	<submenu></submenu>
+	<unique-id>1777523758694078-1</unique-id>
+	<command>echo -n %F | wl-copy</command>
+	<description></description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
+<action>
 	<icon>utilities-terminal</icon>
 	<name>Open Terminal Here</name>
 	<submenu></submenu>
