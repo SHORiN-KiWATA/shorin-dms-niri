@@ -56,7 +56,7 @@ TARGET_SOFTWARE=(
     # Theming & Flatpak
     "flatpak" "bazaar" "matugen" "adw-gtk-theme" "python-pywalfox" "nwg-look" "breeze-cursors"
     # Input Method
-    "fcitx5" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime" "rime-ice-git" "rime-wubi" "rime-wanxiang-gram-zh-hans"
+    "fcitx5" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime" "rime-ice-git" "rime-wubi" "rime-wanxiang-gram-zh-hans" "rime-llm-translator-git"
     # other
     'linuxqq-clipsync-git'
 )
@@ -499,6 +499,13 @@ apply_user_configs() {
     
     run_hide_desktop_file
     shorin link >/dev/null 2>&1 || true
+
+    if command -v rime-llm-config >/dev/null 2>&1; then
+        info "$(_t "Initializing Rime LLM Translator (AI Input Method)..." "正在为您自动配置 Rime LLM Translator 大模型联想...")"
+        rime-llm-config init
+        echo ""
+    fi
+
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
@@ -597,9 +604,9 @@ case "$1" in
     hide-icons) run_hide_desktop_file ;;
     *)
         echo -e "${C_BLU}Usage:${C_DEF} shorindms {init|update|remove|protect|unprotect|protected-list|hide-icons}"
-        echo -e "  ${C_GRN}init${C_DEF}           - $(_t "First-time setup" "首次安装时运行 (全环境一键初始化)")"
-        echo -e "  ${C_YEL}update${C_DEF}         - $(_t "Routine update" "日常更新使用 (同步软件与最新配置)")"
-        echo -e "  ${C_RED}remove${C_DEF}         - $(_t "Uninstall/Cleanup" "卸载/清理 (精准移除管理的配置)")"
+        echo -e "  ${C_GRN}init${C_DEF}            - $(_t "First-time setup" "首次安装时运行 (全环境一键初始化)")"
+        echo -e "  ${C_YEL}update${C_DEF}          - $(_t "Routine update" "日常更新使用 (同步软件与最新配置)")"
+        echo -e "  ${C_RED}remove${C_DEF}          - $(_t "Uninstall/Cleanup" "卸载/清理 (精准移除管理的配置)")"
         echo -e "  ${C_CYA}protect <path>${C_DEF} - $(_t "Protect a config from updates" "保护指定的文件/目录不被更新覆盖")"
         echo -e "  ${C_CYA}unprotect <path>${C_DEF} - $(_t "Remove protection" "取消对指定文件/目录的保护")"
         echo -e "  ${C_CYA}protected-list${C_DEF} - $(_t "Show all protected paths" "查看当前所有受保护的路径")"

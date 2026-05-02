@@ -66,6 +66,10 @@ blur已经在26.04实现。我准备了一个预设的blur配置，可以在.con
 【输入法配置】
 super+空格切换输入法。第一次使用输入法有可能无法使用，super+F1重启一下输入法可以解决。
 f4可以打开菜单。如果出现卡A的情况可以试试按右shift解决。
+【输入法Ai大模型联想词】
+我自制了`rime-llm-translator`功能，给输入法接入ai进行云拼音联想，还可以在输入法直接跟ai聊天。你可以试试打一些拼音然后输入vv呼叫ai进行处理，还可以试试“call:随便什么指令”。我事先准备的硅基流动的免费模型效果很垃圾，你可以运行`rime-llm-conffig`命令配置你自己的ai。我试下来效果最好的是Gemini。
+详情看仓库：https://github.com/SHORiN-KiWATA/rime-llm-translator
+
 
 【剪贴板同步】
 为了解决qq以wayland运行时的剪贴板异常，我自制了linuxqq-clipsync服务，在~/.config/niri/config.kdl中设置了自动启动。如果你因为这个剪贴板同步导致剪贴板出现异常，可以自行删除，如果可以的话麻烦到我的github仓库提交一下bug。
