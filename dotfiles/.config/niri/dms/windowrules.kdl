@@ -65,6 +65,7 @@ window-rule {
     match app-id="clipse-gui"
     match title="群聊的聊天记录"
     match title="聊天记录"
+    match title="群相册"
     match title="日历"
     match title="重命名"
     match app-id="btrfs-assistant"
