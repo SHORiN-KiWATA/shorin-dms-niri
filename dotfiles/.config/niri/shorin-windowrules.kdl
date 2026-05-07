@@ -1,3 +1,5 @@
+// 这个文件里是shorin预先设置好的基础窗口规则，目的是提高使用体验。
+// 警告：这个文件里的内容会被dms覆盖。
 
 // 全局窗口规则
 window-rule {
@@ -124,19 +126,11 @@ window-rule {
     open-floating true
     opacity 1.0
 }
+// 禁用视频播放器的透明度
 window-rule {
     match app-id="mpv"
     match app-id="celluloid"
     opacity 1.0 
-}
-
-
-window-rule {
-    // This regular expression is intentionally made as specific as possible,
-    // since this is the default config, and we want no false positives.
-    // You can get away with just app-id="wezterm" if you want.
-    match app-id=r#"^org\.wezfurlong\.wezterm$"#
-    default-column-width {}
 }
 
 // steam好友弹窗修复
