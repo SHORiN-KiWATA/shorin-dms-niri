@@ -63,14 +63,18 @@ TARGET_SOFTWARE=(
 
 # 系统级强制保护黑名单
 UPDATE_IGNORE=(
-    ".config/gtk-3.0"
-    ".config/gtk-4.0"
-    ".config/mimeapps.list"
-    ".config/xdg-terminals.list"
-    ".config/fcitx5"
-    ".local/share/fcitx5"
-    ".config/niri/dms/outputs.kdl"
-    ".config/niri"
+    "~/.config/gtk-3.0"
+    "~/.config/gtk-4.0"
+    "~/.config/mimeapps.list"
+    "~/.config/xdg-terminals.list"
+    "~/.config/fcitx5"
+    "~/.local/share/fcitx5"
+    "~/.config/niri/dms"
+    "~/.config/niri/scripts"
+    "~/.config/niri/blur.kdl"
+    "~/.config/niri/animations.kdl"
+    "~/.config/niri/config.kdl"
+    "~/.config/niri/layout.kdl"
 )
 
 # ==========================================
