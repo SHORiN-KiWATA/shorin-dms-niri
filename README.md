@@ -23,7 +23,7 @@
 
     如果你使用显示管理器的话在登录界面切换为niri
 
-- update更新
+- update 更新
 
     ```
     shorindms update
