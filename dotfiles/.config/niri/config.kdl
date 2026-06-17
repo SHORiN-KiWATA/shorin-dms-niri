@@ -48,7 +48,7 @@ input {
         // dwtp
         // drag false
         // drag-lock
-        // nautural-scroll可以翻转触摸板滚动的方向
+        // natural-scroll可以翻转触摸板滚动的方向
         natural-scroll
         //accel-speed -0.5
         // accel-profile "flat"

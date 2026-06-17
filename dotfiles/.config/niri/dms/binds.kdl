@@ -28,7 +28,7 @@ binds {
     // settings
     // 文档管理器。如果有thunar的话会优先打开thunar，没有的话会打开nautilus
     Mod+E hotkey-overlay-title="文档管理器 Filemanager" { spawn-sh "thunar || env GSK_RENDERER=gl nautilus --new-window"; }
-    // 另一个打开nautilus的快捷键，主要是为了在同时安装thunar和nautilus的情况下打开naultilus
+    // 另一个打开nautilus的快捷键，主要是为了在同时安装thunar和nautilus的情况下打开nautilus
     Mod+Alt+E hotkey-overlay-title=null {spawn "env" "GSK_RENDERER=gl" "nautilus" "--new-window";}
     Mod+Z hotkey-overlay-title="程序菜单 Applauncher" { spawn-sh "dms ipc call spotlight toggle || fuzzel"; }
     // dms 壁纸选择
@@ -76,7 +76,7 @@ binds {
     Mod+K     { focus-window-up; }
     Mod+L     { focus-column-right; }
 
-    // 移动colume（列）
+    // 移动column（列）
     // super+ctrl+方向键
     Mod+Ctrl+Left hotkey-overlay-title=null { move-column-left; }
     Mod+Ctrl+Right hotkey-overlay-title=null { move-column-right; }
@@ -92,13 +92,13 @@ binds {
     Mod+S { move-window-down; }
     Mod+W { move-window-up; }
     
-    // 切换到第一个colume
+    // 切换到第一个column
     Mod+Home { focus-column-first; }
-    // 切换到最后一个colume
+    // 切换到最后一个column
     Mod+End  { focus-column-last; }
-    // 移动colume到第一个
+    // 移动column到第一个
     Mod+Ctrl+Home { move-column-to-first; }
-    // 移动colume到最后一个
+    // 移动column到最后一个
     Mod+Ctrl+End  { move-column-to-last; }
 
     // 切换显示器聚焦
@@ -112,7 +112,7 @@ binds {
     Mod+Shift+J     { focus-monitor-down; }
     Mod+Shift+K     { focus-monitor-up; }
     Mod+Shift+L     { focus-monitor-right; }
-    // 跨显示器移动colume
+    // 跨显示器移动column
     Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
     Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
     Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
@@ -143,7 +143,7 @@ binds {
     Mod+Shift+Alt+Right  { move-workspace-to-monitor-right; }
     Mod+Shift+Alt+Left  { move-workspace-to-monitor-left; }
 
-    // mod+shitf+滚轮上下切换工作区
+    // mod+shift+滚轮上下切换工作区
     Mod+Shift+WheelScrollDown  hotkey-overlay-title="切换工作区 Change workspaces"    cooldown-ms=150 { focus-workspace-down; }
     Mod+Shift+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
     //再加上ctrl移动窗口
@@ -153,25 +153,25 @@ binds {
     // mod+滚轮上下 左右切换聚焦
     Mod+WheelScrollDown   hotkey-overlay-title="滚轮切换聚焦 Change focus with wheel"   { focus-column-right; }
     Mod+WheelScrollUp        { focus-column-left; }
-    // 再加上ctrl移动colume
+    // 再加上ctrl移动column
     Mod+Ctrl+WheelScrollDown { move-column-right; }
     Mod+Ctrl+WheelScrollUp   { move-column-left; }
 
-    // mod+左右方括号 移动窗口（不是移动colume，是允许移动到另一个colume的窗口移动）
+    // mod+左右方括号 移动窗口（不是移动column，是允许移动到另一个column的窗口移动）
     Mod+BracketLeft  { consume-or-expel-window-left; }
     Mod+BracketRight { consume-or-expel-window-right; }
     // mod+A/D 同效果
-    Mod+A hotkey-overlay-title="向左移动窗口 Move window to left between columes" { consume-or-expel-window-left; }
-    Mod+D hotkey-overlay-title="向右移动窗口 Move window to right between columes" { consume-or-expel-window-right; }
+    Mod+A hotkey-overlay-title="向左移动窗口 Move window to left between columns" { consume-or-expel-window-left; }
+    Mod+D hotkey-overlay-title="向右移动窗口 Move window to right between columns" { consume-or-expel-window-right; }
 
-    // mod+逗号/句号 把窗口合并或者踢出当前的colume
+    // mod+逗号/句号 把窗口合并或者踢出当前的column
     Mod+Comma  { consume-window-into-column; }
     Mod+Period { expel-window-from-column; }
     // mod+shift+A/D 同效果
     Mod+Shift+A  { consume-window-into-column; }
     Mod+Shift+D { expel-window-from-column; }
     
-    // 开启colume的标签页模式
+    // 开启column的标签页模式
     Mod+Shift+X { toggle-column-tabbed-display; }
     //Mod+X { toggle-column-tabbed-display; }
     // mod+鼠标侧键 上下切换聚焦
@@ -190,7 +190,7 @@ binds {
 
     // 增加窗口宽度占满空闲空间
     Mod+Ctrl+F { expand-column-to-available-width; }
-    // 居中当前聚焦的colume
+    // 居中当前聚焦的column
     Mod+C { center-column; }
     Mod+Ctrl+C { center-visible-columns; }
 

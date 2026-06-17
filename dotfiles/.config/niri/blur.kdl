@@ -21,7 +21,7 @@ window-rule {
         blur true
     }
 }
-// fuzzle专属的layer规则
+// fuzzel专属的layer规则
 layer-rule {
     match namespace="^launcher$"
     geometry-corner-radius 8

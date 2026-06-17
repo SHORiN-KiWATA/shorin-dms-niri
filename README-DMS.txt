@@ -14,7 +14,7 @@ sudo rm /etc/NetworkManager/conf.d/iwd.conf
 sudo systemctl restart NetworkManager
 
 【重要工具】
-shorindms命令可以对shoridms桌面进行init初始化、update更新、remove移除等操作，操作前都会备份配置文件到.cache下，如果你有东西被意外覆盖可以去找回。详情看shorindms命令的帮助信息。
+shorindms命令可以对shorindms桌面进行init初始化、update更新、remove移除等操作，操作前都会备份配置文件到.cache下，如果你有东西被意外覆盖可以去找回。详情看shorindms命令的帮助信息。
 
 【Ai助手】
 有一个叫作opencode的开源ai助手，默认键位是Mod+Alt+O（英文字母O），有免费模型可以用。如果有查找文件、查询系统信息之类的简单的需求直接询问这个Ai助手，例如："我的快捷键配置文件在哪里？""我要怎么安装软件"等。PS: 谨慎使用ai修改文件。
@@ -32,7 +32,7 @@ super+G/O 切换overview（在overview的时候可以左键移动窗口，滚轮
 super+alt+A 截图（或者用printscreen键）
 super+alt+V 开关剪贴板
 super+V 切换浮动窗口
-suepr+N 切换浮动窗口聚焦
+super+N 切换浮动窗口聚焦
 
 super+H/L 左右切换聚焦
 super+U/i 上下切换工作区
@@ -49,7 +49,7 @@ super+shift+F10 下载随机动漫壁纸
 1.【overview壁纸】
 super+Z打开程序菜单，打开dms设置。进入“个性化-->壁纸”，设置一张壁纸。我在Wallpapers里存放了几张，可以直接使用。然后开启“带模糊效果的壁纸复本”，这是overview的模糊壁纸，super+G或者super+O打开overview就可以看到。
 
-2.【颜色更随壁纸变化】【gtk主题和qt主题】
+2.【颜色跟随壁纸变化】【gtk主题和qt主题】
 选择“主题与配色”，点击auto自动，然后选择一个自己喜欢的配色方案。
 
 3.【Firefox颜色同步】
@@ -68,7 +68,7 @@ blur已经在26.04实现。我准备了一个预设的blur配置，可以在.con
 super+空格切换输入法。第一次使用输入法有可能无法使用，super+F1重启一下输入法可以解决。
 切换到中文之后按f4可以打开菜单。如果出现卡A的情况可以试试按右shift解决。
 【输入法Ai大模型联想词】
-我自制了`rime-llm-translator`功能，给输入法接入ai进行云拼音联想，还可以在输入法直接跟ai聊天。你可以试试打一些拼音然后输入vv呼叫ai进行处理，还可以试试“call:随便什么指令”。我事先准备的硅基流动的免费模型效果很垃圾，你可以运行`rime-llm-conffig`命令配置你自己的ai。我试下来效果最好的是Gemini。
+我自制了`rime-llm-translator`功能，给输入法接入ai进行云拼音联想，还可以在输入法直接跟ai聊天。你可以试试打一些拼音然后输入vv呼叫ai进行处理，还可以试试“call:随便什么指令”。我事先准备的硅基流动的免费模型效果很垃圾，你可以运行`rime-llm-config`命令配置你自己的ai。我试下来效果最好的是Gemini。
 详情看仓库：https://github.com/SHORiN-KiWATA/rime-llm-translator
 
 【剪贴板同步】

@@ -155,7 +155,7 @@ if [[ "$ACTION" == "help" ]]; then
         echo "  rgb        吸取并复制 屏幕颜色 (RGB)"
         echo "  help, -h   显示此帮助信息"
     else
-        echo "Usage: niri-pick[COMMAND]"
+        echo "Usage: niri-pick [COMMAND]"
         echo ""
         echo "Commands:"
         echo "  menu       Show full interactive menu (Default)"
