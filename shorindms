@@ -186,12 +186,12 @@ manage_software() {
         if [ ${#failed_pkgs[@]} -eq 0 ]; then
             ok "$(_t "All missing software installed successfully." "所有缺失软件均已成功安装。")"
         else
-            warn "$(_t "The following packages failed to install/build:" "以下软件安装或编译失败，请检查网络或 AUR 状态:")"
+            err "$(_t "The following packages failed to install/build:" "以下软件安装或编译失败，请检查网络或 AUR 状态:")"
             for fpkg in "${failed_pkgs[@]}"; do
                 echo -e "  ${C_RED}- $fpkg${C_DEF}"
             done
-            # 不阻断流程，允许继续执行系统配置
-            info "$(_t "Script will continue, but some features might be missing." "脚本将继续执行，但由于软件缺失，部分功能可能无法正常工作。")"
+            err "$(_t "Installation is incomplete. Aborting initialization; fix the failed packages and retry." "安装不完整，已中止初始化。请修复失败软件包后重试。")"
+            exit 1
         fi
         # ----------------------------
     fi
