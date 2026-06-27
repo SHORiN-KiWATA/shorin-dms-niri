@@ -54,7 +54,7 @@ TARGET_SOFTWARE=(
     "timg" "imagemagick" "shorin-contrib-git" "fastfetch" "gdu" "btop" "opencode"
     "shorin-screenrec-menu-git"
     # Theming & Flatpak
-    "flatpak" "bazaar" "matugen" "adw-gtk-theme" "python-pywalfox" "nwg-look" "breeze-cursors"
+    "flatpak" "bazaar" "matugen" "adw-gtk-theme" "python-pywalfox" "breeze-cursors"
     # Input Method
     "fcitx5-shorin-patched-git" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime" "rime-ice-git" "rime-wubi" "rime-wanxiang-gram-zh-hans" "rime-llm-translator-git"
     # other
