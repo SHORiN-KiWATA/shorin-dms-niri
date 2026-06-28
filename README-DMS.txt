@@ -64,9 +64,11 @@ blur已经在26.04实现。我准备了一个预设的blur配置，可以在.con
 【关于文档管理器】
 有两个，一个是nautilus（图标是蓝色柜子的那个）一个是thunar，主要用thunar。装两个是因为Niri的录屏依赖xdg-desktop-portal-gnome，而这个portal会依赖nautilus，装都装了，我就把nautius的功能都补全了，也不占什么硬盘资源。
 
-【输入法配置】
-super+空格切换输入法。第一次使用输入法有可能无法使用，super+F1重启一下输入法可以解决。
-切换到中文之后按f4可以打开菜单。如果出现卡A的情况可以试试按右shift解决。
+【输入法】
+super+空格或者Ctrl+空格切换输入法。第一次使用输入法有可能无法使用，重启一下输入法可以解决。
+切换为中文后f4可以打开菜单。如果出现卡A的情况可以试试按右shift解决。
+使用fcitx5-configtool可以对输入法进行细节配置
+如果输入法出现异常，看这个页面：https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide/wiki/%E4%B8%AD%E6%96%87%E8%BE%93%E5%85%A5%E6%B3%95
 【输入法Ai大模型联想词】
 我自制了`rime-llm-translator`功能，给输入法接入ai进行云拼音联想，还可以在输入法直接跟ai聊天。你可以试试打一些拼音然后输入vv呼叫ai进行处理，还可以试试“call:随便什么指令”。我事先准备的硅基流动的免费模型效果很垃圾，你可以运行`rime-llm-config`命令配置你自己的ai。我试下来效果最好的是Gemini。
 详情看仓库：https://github.com/SHORiN-KiWATA/rime-llm-translator
@@ -96,7 +98,7 @@ fastfetch：系统信息显示工具
 
 【运行Windows软件】
 >https://github.com/SHORiN-KiWATA/proton-wrapper
-此功能由 `shorin-proton-wrapper-git` AUR包提供。双击 .exe 文件会自动用“运行Windows软件”打开，会自动使用 DW-Proton 在 ~/.proton 目录初始化运行环境。如果用“设置Windows软件运行环境”打开的话可以进行各种自定义设置，如运行器、MangoHud 屏显（帧数、硬件占用之类的）、GameScope（在如果遇到窗口异常、交互异常的话可以尝试用 GameScope 打开）等。
+此功能由 `shorin-proton-wrapper-git` AUR包提供。双击 .exe 文件会自动用“运行Windows软件”打开，会自动使用 DW-Proton 在 ~/.proton 目录初始化运行环境。如果用“设置Windows软件运行环境”打开的话可以进行各种自定义设置，如运行器、MangoHud 屏显（帧数、硬件占用之类的）、GameScope（在如果遇到窗口异常、交互异常的话可以尝试用 GameScope 打开）等。如果 DW-Proton 无法运行软件，可以试试用 GE-Proton，如果连 GE-Proton 也不行，别的大概率也不行，建议从环境变量、运行参数入手解决问题，或者尝试兼容层意外的运行方案，例如虚拟机。
 
 【如果不想要了或者安装有异常可以回档】
 如果你是用我的shorin-arch-setup脚本安装的，/usr/local/bin下有两个脚本可以用来回档到运行脚本之前的状态。
