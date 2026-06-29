@@ -17,7 +17,11 @@ sudo systemctl restart NetworkManager
 shorindms命令可以对shorindms桌面进行init初始化、update更新、remove移除等操作，操作前都会备份配置文件到.cache下，如果你有东西被意外覆盖可以去找回。详情看shorindms命令的帮助信息。
 
 【Ai助手】
-有一个叫作opencode的开源ai助手，默认键位是Mod+Alt+O（英文字母O），有免费模型可以用。如果有查找文件、查询系统信息之类的简单的需求直接询问这个Ai助手，例如："我的快捷键配置文件在哪里？""我要怎么安装软件"等。PS: 谨慎使用ai修改文件。
+【Miyu】
+Miyu是我做的“活在终端里的AI二次元少女”，平时可以聊聊天，查查东西什么的，终端直接打字对话就行。miyu 命令可以进入交互模式，miyu config可以进行配置。如果有查找文件、查询系统信息之类的简单的需求直接询问这个Ai助手，例如："我的快捷键配置文件在哪里？""我要怎么安装软件"等。
+【opencode】
+另一个AI助手叫作 opencode，是 Coding Agent，用来做代码项目的，复杂任务可以使用 opencode 完成。默认按键是Mod+alt+O(大写字母O)
+
 
 【重要按键】
 super+shift+/ 打开按键教程

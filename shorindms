@@ -52,7 +52,7 @@ TARGET_SOFTWARE=(
     "kitty" "xdg-terminal-exec" "bat" "fuzzel" "wf-recorder" "wl-screenrec-git"
     "ttf-jetbrains-maple-mono-nf-xx-xx" "eza" "zoxide" "starship" "jq" "fish"
     "timg" "imagemagick" "shorin-contrib-git" "fastfetch" "gdu" "btop" "opencode"
-    "shorin-screenrec-menu-git"
+    "shorin-screenrec-menu-git" "miyu"
     # Theming & Flatpak
     "flatpak" "bazaar" "matugen" "adw-gtk-theme" "python-pywalfox" "breeze-cursors"
     # Input Method
