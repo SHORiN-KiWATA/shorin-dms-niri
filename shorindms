@@ -47,7 +47,7 @@ TARGET_SOFTWARE=(
     "ffmpegthumbnailer" "gvfs-smb" "nautilus-open-any-terminal" "file-roller" "icoextract" "python-pillow"
     "gnome-keyring" "gst-plugins-base" "gst-plugins-good" "gst-libav" "nautilus"
     "xdg-desktop-portal-gtk" "thunar" "tumbler" "poppler-glib" "thunar-archive-plugin"
-    "thunar-volman" "gvfs-mtp" "gvfs-gphoto2" "webp-pixbuf-loader" "libgsf"
+    "thunar-volman" "gvfs-mtp" "gvfs-gphoto2" "webp-pixbuf-loader" "libgsf" "qt5-wayland" "qt6-wayland"
     # Terminal, Shell & CLI Tools
     "kitty" "xdg-terminal-exec" "bat" "fuzzel" "wf-recorder" "wl-screenrec-git"
     "ttf-jetbrains-maple-mono-nf-xx-xx" "eza" "zoxide" "starship" "jq" "fish"
