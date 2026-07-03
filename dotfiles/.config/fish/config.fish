@@ -41,13 +41,3 @@ end
 function raw
 	command ~/.local/bin/random-anime-wallpaper-dms $argv
 end
-
-function 安装
-	command yay -S $argv
-end
-
-function 卸载
-	command yay -Rns $argv
-end 
-
-
