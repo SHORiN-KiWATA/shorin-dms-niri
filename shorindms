@@ -504,6 +504,12 @@ apply_user_configs() {
     run_hide_desktop_file
     shorin link >/dev/null 2>&1 || true
 
+    # 初始化miyu
+    if command -v miyu 2>&1; then
+	miyu fish-init
+    fi
+
+
     if command -v rime-llm-config >/dev/null 2>&1; then
         info "$(_t "Initializing Rime LLM Translator (AI Input Method)..." "正在为您自动配置 Rime LLM Translator 大模型联想...")"
         rime-llm-config init
