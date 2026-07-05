@@ -36,6 +36,10 @@ binds {
     // 随机下载壁纸
     Mod+Shift+F10 hotkey-overlay-title="随机下载壁纸 Random wallpaper" { spawn "~/.local/bin/random-anime-wallpaper-dms";}
 
+    // 这是什么！
+    Mod+Ctrl+Shift+Alt+B hotkey-overlay-title="播放Bad Apple Play Bad Apple" { spawn "bad-apple" ;}
+
+
     Mod+O hotkey-overlay-title="切换总览界面 toggle overview" repeat=false { toggle-overview; }
     Mod+G hotkey-overlay-title="切换总览界面 toggle overview" repeat=false { toggle-overview; }
     // 关闭聚焦窗口
