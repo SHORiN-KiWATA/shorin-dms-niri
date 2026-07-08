@@ -13,7 +13,7 @@ screenshot-path "~/Pictures/Screenshots/Niri-screenshots/%Y-%m-%d_%H-%M-%S.png"
 // 环境变量
 
 environment {
-    LANGUAGE "zh_CN.UTF-8"
+    LANGUAGE "zh_CN:en"
     LANG "zh_CN.UTF-8"
     // 输入法环境变量
     XMODIFIERS "@im=fcitx"
