@@ -18,9 +18,19 @@ shorindms命令可以对shorindms桌面进行init初始化、update更新、remo
 
 【Ai助手】
 【Miyu】
-Miyu是我做的“活在终端里的AI二次元少女”，终端直接打字对话。miyu 命令可以进入交互模式，miyu config可以进行配置，可以自定义提示词和模型。如果有查找文件、安装软件、系统异常、查询系统信息之类的需求直接询问这个Ai助手，例如：“我的快捷键配置文件在哪里？”“我要怎么安装软件” “帮我安装opencode”等
+https://github.com/SHORiN-KiWATA/Miyu
+Miyu是我做的AI助手，已集成进终端，终端打字直接无缝对话。运行 miyu 命令可以进入交互模式；运行 miyu config 可以进行配置，支持自定义提示词和模型。如果有查找文件、安装软件、系统异常、查询系统信息之类的需求直接询问这个Ai助手，例如："我的快捷键配置文件在哪里？""我要怎么安装软件" "帮我安装opencode" "我的steam没法用输入法"等，其他问题的当然也可以。
+想移除的话运行下面的命令
+```
+# 先移除和终端的集成
+miyu remove-shell-hook
+
+# 然后删除包
+
+yay -Rns miyu
+```
 【opencode】
-另一个AI助手叫作 opencode，是 Coding Agent，用来做代码项目的，复杂任务可以使用 opencode 完成。默认按键是Mod+alt+O(大写字母O)
+这是另一个AI助手，准确地说是 Coding Agent，用来进行高度复杂任务，默认打开按键是Mod+alt+O (大写字母O)，或者终端运行 opencode 命令。想卸载的话可以运行 `yay -Rns opencode`。
 
 
 【重要按键】
