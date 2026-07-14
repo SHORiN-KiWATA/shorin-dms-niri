@@ -156,6 +156,12 @@ window-rule {
     open-floating true
 }
 
+debug {
+	// 放宽聚焦拦截，修复点击托盘程序无法跳转聚焦的问题。
+	honor-xdg-activation-with-invalid-serial
+}
+
+
 include "dms/binds.kdl"
 include "dms/alttab.kdl"
 include "dms/supertab.kdl"
