@@ -152,7 +152,7 @@ window-rule {
 }
 // Open dms windows as floating by default
 window-rule {
-    match app-id=r#"org.quickshell$"#
+    match app-id=r#"com.danklinux.dms$"#
     open-floating true
 }
 
