@@ -62,6 +62,7 @@ TARGET_SOFTWARE=(
 )
 
 # 系统级强制保护黑名单
+# shellcheck disable=SC2088 # These are literal rules normalized by normalize_protected_path.
 UPDATE_IGNORE=(
     "~/.config/gtk-3.0"
     "~/.config/gtk-4.0"
@@ -217,17 +218,130 @@ manage_software() {
 # ==========================================
 # 6. 文件保护与 Dotfiles 同步功能
 # ==========================================
-build_ignore_list() {
-    ALL_IGNORES=("${UPDATE_IGNORE[@]}")
-    if [[ -f "$USER_IGNORE_FILE" ]]; then
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && ALL_IGNORES+=("$line")
-        done < "$USER_IGNORE_FILE"
+normalize_protected_path() {
+    local input="$1"
+    local expanded_path
+    local canonical_home
+    local canonical_path
+
+    NORMALIZED_PATH=""
+    NORMALIZE_ERROR=""
+
+    if [[ -z "$input" ]]; then
+        NORMALIZE_ERROR="$(_t "path is empty" "路径为空")"
+        return 1
     fi
+    if [[ "$input" == *$'\n'* || "$input" == *$'\r'* ]]; then
+        NORMALIZE_ERROR="$(_t "path cannot contain line breaks" "路径不能包含换行符")"
+        return 1
+    fi
+
+    # shellcheck disable=SC2088 # A quoted tilde is intentionally accepted as input.
+    case "$input" in
+        "~")
+            expanded_path="$HOME"
+            ;;
+        "~/"*)
+            expanded_path="$HOME/${input:2}"
+            ;;
+        "~"*)
+            NORMALIZE_ERROR="$(_t "other users' home paths are not supported" "不支持其他用户的家目录路径")"
+            return 1
+            ;;
+        /*)
+            expanded_path="$input"
+            ;;
+        *)
+            # Protection rules are always relative to HOME, not the current directory.
+            expanded_path="$HOME/$input"
+            ;;
+    esac
+
+    # Keep symlinks lexical because updates also address files through their HOME-relative names.
+    canonical_home="$(realpath -m -s -- "$HOME")" || {
+        NORMALIZE_ERROR="$(_t "failed to resolve the home directory" "无法解析家目录")"
+        return 1
+    }
+    canonical_path="$(realpath -m -s -- "$expanded_path")" || {
+        NORMALIZE_ERROR="$(_t "failed to resolve the path" "无法解析路径")"
+        return 1
+    }
+
+    if [[ "$canonical_path" == "$canonical_home" ]]; then
+        NORMALIZE_ERROR="$(_t "the home directory itself cannot be protected" "不能保护整个家目录")"
+        return 1
+    fi
+    if [[ "$canonical_path" != "$canonical_home/"* ]]; then
+        NORMALIZE_ERROR="$(_t "path must be inside the home directory" "路径必须位于家目录内")"
+        return 1
+    fi
+
+    NORMALIZED_PATH="${canonical_path#"$canonical_home"/}"
+    if [[ "$NORMALIZED_PATH" == \#* ]]; then
+        NORMALIZE_ERROR="$(_t "paths beginning with # cannot be stored in protected.list" "protected.list 无法保存以 # 开头的路径")"
+        NORMALIZED_PATH=""
+        return 1
+    fi
+}
+
+append_ignore_rule() {
+    local rule="$1"
+    local origin="$2"
+    local existing
+
+    if ! normalize_protected_path "$rule"; then
+        INVALID_IGNORE_RULES+=("$origin: $rule ($NORMALIZE_ERROR)")
+        return
+    fi
+
+    for existing in "${ALL_IGNORES[@]}"; do
+        [[ "$existing" == "$NORMALIZED_PATH" ]] && return
+    done
+    ALL_IGNORES+=("$NORMALIZED_PATH")
+}
+
+build_ignore_list() {
+    ALL_IGNORES=()
+    INVALID_IGNORE_RULES=()
+
+    local rule
+    local line
+    for rule in "${UPDATE_IGNORE[@]}"; do
+        append_ignore_rule "$rule" "$(_t "built-in rule" "内置规则")"
+    done
+
+    if [[ -e "$USER_IGNORE_FILE" || -L "$USER_IGNORE_FILE" ]]; then
+        if [[ -L "$USER_IGNORE_FILE" || ! -f "$USER_IGNORE_FILE" || ! -r "$USER_IGNORE_FILE" ]]; then
+            INVALID_IGNORE_RULES+=("$USER_IGNORE_FILE ($(_t "protection list is not a readable regular file" "保护列表不是可读的普通文件"))")
+            return 1
+        fi
+        local user_rules=()
+        if ! mapfile -t user_rules < "$USER_IGNORE_FILE"; then
+            INVALID_IGNORE_RULES+=("$USER_IGNORE_FILE ($(_t "failed to read protection list" "无法读取保护列表"))")
+            return 1
+        fi
+        local line_number=0
+        for line in "${user_rules[@]}"; do
+            ((line_number+=1))
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            append_ignore_rule "$line" "$(_t "protected.list line $line_number" "protected.list 第 $line_number 行")"
+        done
+    fi
+}
+
+report_invalid_ignore_rules() {
+    [[ ${#INVALID_IGNORE_RULES[@]} -eq 0 ]] && return
+
+    warn "$(_t "The following invalid protection rules were ignored:" "以下无效保护规则已被忽略：")"
+    local invalid_rule
+    for invalid_rule in "${INVALID_IGNORE_RULES[@]}"; do
+        echo "  - $invalid_rule"
+    done
 }
 
 is_ignored() {
     local target_path="$1"
+    local ignore_rule
     for ignore_rule in "${ALL_IGNORES[@]}"; do
         if [[ "$target_path" == "$ignore_rule" || "$target_path" == "$ignore_rule/"* ]]; then
             return 0
@@ -236,46 +350,168 @@ is_ignored() {
     return 1
 }
 
-manage_protection() {
+manage_protection_locked() {
     local action="$1"
     local target="$2"
-    mkdir -p "$(dirname "$USER_IGNORE_FILE")" 2>/dev/null
-    touch "$USER_IGNORE_FILE" 2>/dev/null
+    if [[ -L "$USER_IGNORE_FILE" || ( -e "$USER_IGNORE_FILE" && ! -f "$USER_IGNORE_FILE" ) ]] || \
+       ! touch "$USER_IGNORE_FILE" 2>/dev/null || \
+       [[ ! -f "$USER_IGNORE_FILE" || ! -r "$USER_IGNORE_FILE" || ! -w "$USER_IGNORE_FILE" ]]; then
+        err "$(_t "Protection list must be a readable and writable regular file: $USER_IGNORE_FILE" "保护列表必须是可读写的普通文件：$USER_IGNORE_FILE")"
+        return 1
+    fi
+
+    local user_rules=()
+    if ! mapfile -t user_rules < "$USER_IGNORE_FILE"; then
+        err "$(_t "Failed to read the protection list: $USER_IGNORE_FILE" "无法读取保护列表：$USER_IGNORE_FILE")"
+        return 1
+    fi
     
     if [[ "$action" == "list" ]]; then
         info "$(_t "System protected paths (Hardcoded):" "系统内置保护路径 (硬编码):")"
-        for i in "${UPDATE_IGNORE[@]}"; do echo "  - $i"; done
+        local rule
+        for rule in "${UPDATE_IGNORE[@]}"; do
+            if normalize_protected_path "$rule"; then
+                echo "  - ~/$NORMALIZED_PATH"
+            else
+                echo "  - $rule [$(_t "invalid" "无效"): $NORMALIZE_ERROR]"
+            fi
+        done
+
         info "$(_t "User protected paths (~/.config/shorin-dms-niri/protected.list):" "用户自定义保护路径:")"
-        if [[ -s "$USER_IGNORE_FILE" ]]; then
-            sed 's/^/  - /' "$USER_IGNORE_FILE"
-        else
+        local valid_count=0
+        local line_number=0
+        local line
+        local invalid_user_rules=()
+        for line in "${user_rules[@]}"; do
+            ((line_number+=1))
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            if normalize_protected_path "$line"; then
+                echo "  - ~/$NORMALIZED_PATH"
+                ((valid_count+=1))
+            else
+                invalid_user_rules+=("$(_t "line $line_number" "第 $line_number 行"): $line ($NORMALIZE_ERROR)")
+            fi
+        done
+        if [[ $valid_count -eq 0 ]]; then
             echo "  $(_t "(Empty)" "(空)")"
+        fi
+
+        if [[ ${#invalid_user_rules[@]} -gt 0 ]]; then
+            warn "$(_t "Invalid user protection rules:" "无效的用户保护规则：")"
+            local invalid_rule
+            for invalid_rule in "${invalid_user_rules[@]}"; do
+                echo "  - $invalid_rule"
+            done
         fi
         return
     fi
     
-    if [[ -z "$target" ]]; then return; fi
-    local abs_path="$(realpath -m "$target")"
-    local clean_home="${HOME%/}"
-    
-    if [[ "$abs_path" != "$clean_home/"* ]]; then
-        err "$(_t "Path must be inside your home directory." "目标路径必须在您的家目录内。")"
-        return
+    if ! normalize_protected_path "$target"; then
+        err "$(_t "Invalid protection path" "无效的保护路径"): ${target:-$(_t "(empty)" "(空)")} ($NORMALIZE_ERROR)"
+        return 1
     fi
-    
-    local rel_path="${abs_path#$clean_home/}"
+    local rel_path="$NORMALIZED_PATH"
     
     if [[ "$action" == "add" ]]; then
-        if grep -Fxq "$rel_path" "$USER_IGNORE_FILE"; then
+        local existing_rule
+        local already_protected=0
+        for existing_rule in "${user_rules[@]}"; do
+            [[ -z "$existing_rule" || "$existing_rule" == \#* ]] && continue
+            if normalize_protected_path "$existing_rule" && [[ "$NORMALIZED_PATH" == "$rel_path" ]]; then
+                already_protected=1
+                break
+            fi
+        done
+
+        if [[ $already_protected -eq 1 ]]; then
             info "$(_t "Path is already protected." "该路径已在保护列表中。")"
         else
-            echo "$rel_path" >> "$USER_IGNORE_FILE"
+            local temp_file
+            temp_file="$(mktemp "$USER_IGNORE_FILE.tmp.XXXXXX")" || {
+                err "$(_t "Failed to create a temporary protection list." "无法创建临时保护列表。")"
+                return 1
+            }
+            for existing_rule in "${user_rules[@]}"; do
+                printf '%s\n' "$existing_rule" >> "$temp_file" || {
+                    rm -f "$temp_file"
+                    err "$(_t "Failed to update the protection list." "更新保护列表失败。")"
+                    return 1
+                }
+            done
+            printf '%s\n' "$rel_path" >> "$temp_file" || {
+                rm -f "$temp_file"
+                err "$(_t "Failed to update the protection list." "更新保护列表失败。")"
+                return 1
+            }
+            chmod --reference="$USER_IGNORE_FILE" "$temp_file" 2>/dev/null || true
+            if ! mv -fT -- "$temp_file" "$USER_IGNORE_FILE"; then
+                rm -f "$temp_file"
+                err "$(_t "Failed to update the protection list." "更新保护列表失败。")"
+                return 1
+            fi
             ok "$(_t "Protected: ~/$rel_path" "已添加保护: ~/$rel_path")"
         fi
     elif [[ "$action" == "remove" ]]; then
-        sed -i "\|^$rel_path$|d" "$USER_IGNORE_FILE" 2>/dev/null
+        local temp_file
+        temp_file="$(mktemp "$USER_IGNORE_FILE.tmp.XXXXXX")" || {
+            err "$(_t "Failed to create a temporary protection list." "无法创建临时保护列表。")"
+            return 1
+        }
+
+        local removed=0
+        for existing_rule in "${user_rules[@]}"; do
+            if [[ -n "$existing_rule" && "$existing_rule" != \#* ]] && \
+               normalize_protected_path "$existing_rule" && [[ "$NORMALIZED_PATH" == "$rel_path" ]]; then
+                ((removed+=1))
+                continue
+            fi
+            printf '%s\n' "$existing_rule" >> "$temp_file" || {
+                rm -f "$temp_file"
+                err "$(_t "Failed to update the protection list." "更新保护列表失败。")"
+                return 1
+            }
+        done
+
+        if [[ $removed -eq 0 ]]; then
+            rm -f "$temp_file"
+            info "$(_t "Path was not in the user protection list: ~/$rel_path" "该路径不在用户保护列表中: ~/$rel_path")"
+            return
+        fi
+
+        chmod --reference="$USER_IGNORE_FILE" "$temp_file" 2>/dev/null || true
+        if ! mv -fT -- "$temp_file" "$USER_IGNORE_FILE"; then
+            rm -f "$temp_file"
+            err "$(_t "Failed to update the protection list." "更新保护列表失败。")"
+            return 1
+        fi
+
         ok "$(_t "Unprotected: ~/$rel_path" "已取消保护: ~/$rel_path")"
     fi
+}
+
+manage_protection() {
+    local protection_dir
+    protection_dir="$(dirname "$USER_IGNORE_FILE")"
+    if ! mkdir -p "$protection_dir" 2>/dev/null; then
+        err "$(_t "Failed to access the protection list: $USER_IGNORE_FILE" "无法访问保护列表：$USER_IGNORE_FILE")"
+        return 1
+    fi
+    if ! command -v flock >/dev/null 2>&1; then
+        err "$(_t "The flock command is required to safely update the protection list." "安全更新保护列表需要 flock 命令。")"
+        return 1
+    fi
+
+    (
+        exec 9>"$USER_IGNORE_FILE.lock" || {
+            err "$(_t "Failed to open the protection-list lock." "无法打开保护列表锁。")"
+            exit 1
+        }
+        flock -x 9 || {
+            err "$(_t "Failed to lock the protection list." "无法锁定保护列表。")"
+            exit 1
+        }
+        manage_protection_locked "$@"
+    )
 }
 
 backup_and_copy() {
@@ -313,9 +549,14 @@ sync_dotfiles() {
     local mode="$1"
     local sync_count=0
     local skip_count=0
-    build_ignore_list
     
     if [[ "$mode" == "update" ]]; then
+        if ! build_ignore_list; then
+            report_invalid_ignore_rules
+            err "$(_t "Cannot safely update while the protection list is unavailable." "保护列表不可用，无法安全更新。")"
+            return 1
+        fi
+        report_invalid_ignore_rules
         step "$(_t "Updating Configuration Files" "正在更新配置文件")"
     else
         step "$(_t "Initializing Configurations" "全量初始化配置")"
@@ -617,8 +858,8 @@ case "$1" in
         echo -e "  ${C_GRN}init${C_DEF}            - $(_t "First-time setup" "首次安装时运行 (全环境一键初始化)")"
         echo -e "  ${C_YEL}update${C_DEF}          - $(_t "Routine update" "日常更新使用 (同步软件与最新配置)")"
         echo -e "  ${C_RED}remove${C_DEF}          - $(_t "Uninstall/Cleanup" "卸载/清理 (精准移除管理的配置)")"
-        echo -e "  ${C_CYA}protect <path>${C_DEF} - $(_t "Protect a config from updates" "保护指定的文件/目录不被更新覆盖")"
-        echo -e "  ${C_CYA}unprotect <path>${C_DEF} - $(_t "Remove protection" "取消对指定文件/目录的保护")"
+        echo -e "  ${C_CYA}protect <path>${C_DEF} - $(_t "Protect a config from updates (relative paths use HOME)" "保护指定的文件/目录不被更新覆盖 (相对路径基于家目录)")"
+        echo -e "  ${C_CYA}unprotect <path>${C_DEF} - $(_t "Remove protection (relative paths use HOME)" "取消对指定文件/目录的保护 (相对路径基于家目录)")"
         echo -e "  ${C_CYA}protected-list${C_DEF} - $(_t "Show all protected paths" "查看当前所有受保护的路径")"
         exit 1
     ;;
