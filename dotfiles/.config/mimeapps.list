@@ -44,4 +44,4 @@ application/octet-stream=vim.desktop;
 image/svg+xml=vim.desktop;
 image/webp=swayimg.desktop;
 application/xml=vim.desktop;
-text/markdown=vim.desktop;
+text/markdown=typora.desktop;

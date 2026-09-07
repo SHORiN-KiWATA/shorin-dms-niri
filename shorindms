@@ -40,7 +40,7 @@ CACHE_FILE="$HOME/.cache/shorin-dms-niri-software.cache"
 # ==========================================
 TARGET_SOFTWARE=(
     # Core utilities & Media
-    "shorin-dms-niri-git" "xdg-desktop-portal-gnome" "satty" "slurp" "imv" "mpv" "firefox" "niri-sidebar-git"
+    "shorin-dms-niri-git" "xdg-desktop-portal-gnome" "satty" "slurp" "imv" "mpv" "firefox"
     # Fonts
     "noto-fonts" "noto-fonts-cjk" "noto-fonts-emoji"
     # File Manager & Plugins
@@ -51,7 +51,7 @@ TARGET_SOFTWARE=(
     # Terminal, Shell & CLI Tools
     "kitty" "xdg-terminal-exec" "bat" "fuzzel" "wf-recorder" "wl-screenrec-git"
     "ttf-jetbrains-maple-mono-nf-xx-xx" "eza" "zoxide" "starship" "jq" "fish"
-    "timg" "imagemagick" "shorin-contrib-git" "fastfetch" "gdu" "btop" "opencode"
+    "timg" "imagemagick" "shorin-contrib-git" "fastfetch" "gdu" "btop" 
     "shorin-screenrec-menu-git" "miyu"
     # Theming & Flatpak
     "flatpak" "bazaar" "matugen" "adw-gtk-theme" "python-pywalfox" "breeze-cursors"
@@ -760,9 +760,9 @@ apply_user_configs() {
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
-    local doc_src="/usr/share/doc/shorin-dms-niri/README-DMS.txt"
+    local doc_src="/usr/share/doc/shorin-dms-niri/README-DMS.md"
     if [[ -f "$doc_src" ]]; then
-        cp -n "$doc_src" "$HOME/必看-Shorin-DMS-Niri使用方法.txt" 2>/dev/null || true
+        cp -n "$doc_src" "$HOME/必看-Shorin-DMS-Niri使用方法.md" 2>/dev/null || true
     fi
     ok "$(_t "User environment setup complete!" "用户环境布置完成！")"
 }
@@ -794,7 +794,7 @@ remove_dotfiles() {
     if [[ -f "/etc/firefox/policies/policies.json" ]]; then
         sudo rm -f "/etc/firefox/policies/policies.json"
     fi
-    rm -f "$HOME/必看-Shorin-DMS-Niri使用方法.txt" 2>/dev/null
+    rm -f "$HOME/必看-Shorin-DMS-Niri使用方法.md" "$HOME/必看-Shorin-DMS-Niri使用方法.txt" 2>/dev/null
     
     ok "$(_t "Cleanup complete! Removed $removed_count files." "配置清理完成！共精准移除了 $removed_count 个配置文件。")"
 
