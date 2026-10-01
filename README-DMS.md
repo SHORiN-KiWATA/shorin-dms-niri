@@ -152,9 +152,9 @@ blur 已经在 26.04 实现。我准备了一个预设的 blur 配置，可以�
 
 ## 剪贴板同步
 
-<https://github.com/SHORiN-KiWATA/linuxqq-clipsync>
+<https://github.com/SHORiN-KiWATA/linuxqq-wayland-fix>
 
-为了解决 QQ 以 Wayland 运行时的剪贴板异常，我自制了 linuxqq-clipsync 服务，在 `~/.config/niri/config.kdl` 中设置了自动启动。如果你因为这个剪贴板同步导致剪贴板出现异常，可以自行删除，如果可以的话麻烦到我的 GitHub 仓库提交一下 bug。
+为了解决 QQ 以 Wayland 运行时剪贴板与系统不互通（右键复制、粘贴图片和文件无效）、无法屏幕共享的问题，我自制了 linuxqq-wayland-fix，已经预装。从应用菜单的「QQ（Wayland修复版）」打开 QQ 即可。如果遇到异常，可以运行 `linuxqq-wayland-fix --doctor` 自检，或者到 GitHub 仓库提交 bug。
 
 ## 安装和卸载软件
 

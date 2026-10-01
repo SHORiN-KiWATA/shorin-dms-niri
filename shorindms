@@ -58,7 +58,7 @@ TARGET_SOFTWARE=(
     # Input Method
     "fcitx5-shorin-patched-git" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime" "rime-ice-git" "rime-wubi" "rime-wanxiang-gram-zh-hans" "rime-llm-translator-git"
     # other
-    'linuxqq-clipsync-git' "shorin-proton-wrapper-git"
+    'linuxqq-wayland-fix-git' "shorin-proton-wrapper-git"
 )
 
 # 系统级强制保护黑名单
