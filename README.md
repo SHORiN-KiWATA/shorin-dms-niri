@@ -40,4 +40,6 @@
     yay -Rns shorin-dms-niri-git
     ```
 
-    
+## QQ
+
+预装了 [linuxqq-wayland-fix](https://github.com/SHORiN-KiWATA/linuxqq-wayland-fix)，修复 QQ 以 Wayland 运行时屏幕共享、共享电脑声音和剪贴板的问题。请从应用菜单的「QQ（Wayland修复版）」打开 QQ。
