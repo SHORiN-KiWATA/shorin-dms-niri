@@ -86,8 +86,8 @@ spawn-at-startup "dms" "run"
 spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=niri LANG LANGUAGE LC_MESSAGES && /usr/lib/xdg-desktop-portal-gnome"
 // GNOME tracker修复
 spawn-sh-at-startup "systemctl --user set-environment XDG_SESSION_CLASS=user"
-// 输入法
-spawn-at-startup "fcitx5" 
+// 输入法：由 XDG 自启动(org.fcitx.Fcitx5.desktop)启动，这里再启动会和它抢输入法协议
+// spawn-at-startup "fcitx5"
 // 截图音效的守护进程
 spawn-at-startup "~/.config/niri/scripts/screenshot-sound.sh"
 // 允许root通过用户的xwayland打开窗口
