@@ -15,6 +15,11 @@ layer-rule {
     match namespace="dms:blurwallpaper"
      place-within-backdrop true
 }
+// 以浮动模式打开 DMS 的设置等窗口（2.0 起 app-id 改为 dev.duxlabs.shell，旧版是 com.danklinux.dms）
+window-rule {
+    match app-id=r#"^(dev\.duxlabs\.shell|com\.danklinux\.dms)$"#
+    open-floating true
+}
 // 以浮动模式打开imv（一个轻量化图片预览程序）且不自动聚焦
 window-rule {
     match app-id="imv"

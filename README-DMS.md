@@ -3,7 +3,7 @@
 ## 可以查阅的文档
 
 - ArchWiki: <https://wiki.archlinux.org/title/Main_page>
-- DMS Wiki: <https://danklinux.com/>
+- DMS Wiki: <https://duxlabs.dev/>
 - Niri Wiki: <https://github.com/niri-wm/niri/wiki>
 - ShorinArch: <https://shorin.xyz/wiki>
 - Shorin 一键配置脚本: <https://shorin.xyz/wiki/archsetup>

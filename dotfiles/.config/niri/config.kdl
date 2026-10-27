@@ -151,11 +151,6 @@ window-rule {
     match app-id="zoom"
     open-floating true
 }
-// Open dms windows as floating by default
-window-rule {
-    match app-id=r#"com.danklinux.dms$"#
-    open-floating true
-}
 
 debug {
 	// 放宽聚焦拦截，修复点击托盘程序无法跳转聚焦的问题。
