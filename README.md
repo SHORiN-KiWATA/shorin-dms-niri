@@ -1,6 +1,9 @@
-# shorin-dms-niri
+# shorin-dux-niri
 
 基于Niri+DMS的桌面预设，开箱即用。
+
+> DMS（DankMaterialShell）2.0 起更名为 Dux Shell，本项目也从 `shorin-dms-niri` 改名为 `shorin-dux-niri`，命令仍是 `shorindms`。
+> 从旧包迁移：`yay -S shorin-dux-niri-git`，提示与 `shorin-dms-niri-git` 冲突时选择移除旧包即可，配置和保护名单都不受影响。
 
 
 ##  Usage 使用方法
@@ -8,7 +11,7 @@
 - install安装
 
     ```
-    yay -S shorin-dms-niri-git
+    yay -S shorin-dux-niri-git
     ```
 
     ```
@@ -37,7 +40,7 @@
     ```
 
     ```
-    yay -Rns shorin-dms-niri-git
+    yay -Rns shorin-dux-niri-git
     ```
 
 ## QQ

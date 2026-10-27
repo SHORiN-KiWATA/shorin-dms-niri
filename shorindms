@@ -28,7 +28,7 @@ step() { echo -e "\n${C_CYA}>>> $1${C_DEF}"; }
 # ==========================================
 # 2. 全局变量与核心配置
 # ==========================================
-TEMPLATE_DIR="/usr/share/shorin-dms-niri"
+TEMPLATE_DIR="/usr/share/shorin-dux-niri"
 BASE_BACKUP_DIR="$HOME/.cache/shorin-dms-niri-backup"
 BACKUP_DIR="$BASE_BACKUP_DIR/$(date +%Y%m%d_%H%M%S)"
 
@@ -40,7 +40,7 @@ CACHE_FILE="$HOME/.cache/shorin-dms-niri-software.cache"
 # ==========================================
 TARGET_SOFTWARE=(
     # Core utilities & Media
-    "shorin-dms-niri-git" "xdg-desktop-portal-gnome" "satty" "slurp" "imv" "mpv" "firefox"
+    "shorin-dux-niri-git" "xdg-desktop-portal-gnome" "satty" "slurp" "imv" "mpv" "firefox"
     # Fonts
     "noto-fonts" "noto-fonts-cjk" "noto-fonts-emoji"
     # File Manager & Plugins
@@ -59,6 +59,11 @@ TARGET_SOFTWARE=(
     "fcitx5-shorin-patched-git" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime" "rime-ice-git" "rime-wubi" "rime-wanxiang-gram-zh-hans" "rime-llm-translator-git"
     # other
     'linuxqq-wayland-fix-git' "shorin-proton-wrapper-git"
+)
+
+# 改过名的软件：旧名 -> 新名。旧缓存里的旧名不算"已废弃"，卸载建议里换成新名
+declare -A RENAMED_SOFTWARE=(
+    ["shorin-dms-niri-git"]="shorin-dux-niri-git"
 )
 
 # 系统级强制保护黑名单
@@ -144,7 +149,7 @@ manage_software() {
             done
             
             # 如果不在新名单里，且用户系统上还装了这个软件，就记录下来
-            if [[ $found -eq 0 ]]; then
+            if [[ $found -eq 0 && -z "${RENAMED_SOFTWARE[$old_pkg]}" ]]; then
                 if pacman -Qq "$old_pkg" >/dev/null 2>&1; then
                     deprecated+=("$old_pkg")
                 fi
@@ -760,7 +765,7 @@ apply_user_configs() {
     mkdir -p "$HOME/.config/niri/dms" 2>/dev/null
     touch "$HOME/.config/niri/dms/colors.kdl"
     
-    local doc_src="/usr/share/doc/shorin-dms-niri/README-DMS.md"
+    local doc_src="/usr/share/doc/shorin-dux-niri/README-DMS.md"
     if [[ -f "$doc_src" ]]; then
         cp -n "$doc_src" "$HOME/必看-Shorin-DMS-Niri使用方法.md" 2>/dev/null || true
     fi
@@ -811,6 +816,7 @@ remove_dotfiles() {
 
         # 过滤出当前系统中仍然安装着的包
         for pkg in "${cached_pkgs[@]}"; do
+            pkg="${RENAMED_SOFTWARE[$pkg]:-$pkg}"
             if pacman -Qq "$pkg" >/dev/null 2>&1; then
                 installed_pkgs+=("$pkg")
             fi
